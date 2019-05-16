@@ -1,5 +1,12 @@
 {
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "declarationDir": "./dist/dts",
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "removeComments": false,
+    "sourceMap": true,
     "target": "es2015"
   }
 }

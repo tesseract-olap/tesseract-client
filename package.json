@@ -1,29 +1,30 @@
 {
   "name": "tesseract-olap-client",
   "version": "1.0.0-alpha",
-  "description": "",
-  "main": "./dist/cjs/bundle.cjs.js",
-  "module": "./dist/esm/bundle.esm.js",
-  "browser": "./dist/iife/bundle.iife.js",
+  "description": "A javascript client to fetch and work with entities from a tesseract-olap server.",
+  "main": "./dist/cjs/index.cjs.js",
+  "module": "./dist/esm/index.esm.js",
+  "types": "./dist/dts/index.d.ts",
   "scripts": {
-    "test": "cross-env NODE_ENV=test BABEL_ENV=test && jest --config=jest.config.js",
-    "test-watch": "cross-env NODE_ENV=test BABEL_ENV=test && jest --config=jest.config.js --watch",
+    "test": "cross-env NODE_ENV=test BABEL_ENV=test SERVER_URL=https://data-dev.stat.ee/tesseract/ && jest --config=jest.config.js",
+    "test-watch": "cross-env NODE_ENV=test BABEL_ENV=test SERVER_URL=https://data-dev.stat.ee/tesseract/ && jest --config=jest.config.js --watch",
     "dev": "cross-env NODE_ENV=development BABEL_ENV=development rollup --config rollup.config.js --watch",
     "build": "cross-env NODE_ENV=production BABEL_ENV=production rollup --config rollup.config.js"
   },
   "dependencies": {
-    "axios": "^0.18.0",
-    "form-urlencoded": "^3.0.0",
-    "url-join": "^4.0.0"
+    "axios": "^0.18.0"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
     "@babel/preset-env": "^7.2.3",
+    "@types/form-urlencoded": "^2.0.1",
     "@types/node": "^12.0.0",
+    "@types/url-join": "^4.0.0",
     "babel-core": "^7.0.0-bridge.0",
     "babel-jest": "^24.8.0",
     "cross-env": "^5.2.0",
     "eslint": "^5.11.0",
+    "form-urlencoded": "^3.0.0",
     "jest": "^24.8.0",
     "rollup": "^1.12.0",
     "rollup-plugin-babel": "^4.1.0",
@@ -33,6 +34,7 @@
     "rollup-plugin-replace": "^2.1.0",
     "rollup-plugin-terser": "^4.0.0",
     "rollup-plugin-typescript2": "^0.21.0",
-    "typescript": "^3.4.5"
+    "typescript": "^3.4.5",
+    "url-join": "^4.0.0"
   }
 }

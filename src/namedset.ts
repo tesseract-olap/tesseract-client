@@ -1,6 +1,7 @@
 import {Annotations, JSONObject} from "./common";
 import Cube from "./cube";
-import Dimension, {Level} from "./dimension";
+import Dimension from "./dimension";
+import Level from "./level";
 
 class NamedSet {
   public annotations: Annotations;
@@ -14,7 +15,7 @@ class NamedSet {
     this.name = name;
   }
 
-  static fromJSON(root: JSONObject, dimensions: Dimension[]): NamedSet {
+  static fromJSON(dimensions: Dimension[], root: JSONObject): NamedSet {
     const dim = dimensions.find(d => d.name == root["dimension"]);
     const hie = dim.findHierarchy(root["hierarchy"]);
     const level = hie.findLevel(root["level"]);

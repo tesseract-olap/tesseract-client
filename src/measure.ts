@@ -2,7 +2,7 @@ import urljoin from "url-join";
 
 import {AggregatorType, Annotations, JSONObject} from "./common";
 import Cube from "./cube";
-import { AnnotationMissingError } from "./errors";
+import {AnnotationMissingError} from "./errors";
 
 class Measure {
   public aggregatorType: AggregatorType;

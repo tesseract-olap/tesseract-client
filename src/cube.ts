@@ -1,16 +1,16 @@
 import urljoin from "url-join";
 
 import {Annotations, DimensionType, JSONObject, splitFullNameParts} from "./common";
-import Dimension, {Level} from "./dimension";
-import Measure from "./measure";
-import NamedSet from "./namedset";
-import Query from "./query";
+import Dimension from "./dimension";
 import {
   AnnotationMissingError,
-  PropertyMissingError,
   DimensionMissingError,
   MeasureMissingError
 } from "./errors";
+import Level from "./level";
+import Measure from "./measure";
+import NamedSet from "./namedset";
+import Query from "./query";
 
 class Cube {
   public annotations: Annotations;
@@ -59,7 +59,7 @@ class Cube {
       root["annotations"],
       dimensions,
       root["measures"].map(Measure.fromJSON),
-      root["named_sets"].map(ns => NamedSet.fromJSON(ns, dimensions))
+      root["named_sets"].map(NamedSet.fromJSON.bind(null, dimensions))
     );
   }
 

@@ -8,9 +8,9 @@ import {
   JSONObject
 } from "./common";
 import Cube from "./cube";
-import { AnnotationMissingError } from "./errors";
-
-const LEVEL_INTRINSIC_PROPERTIES = new Set(["Caption", "Key", "Name", "UniqueName"]);
+import {AnnotationMissingError} from "./errors";
+import Hierarchy from "./hierarchy";
+import Level from "./level";
 
 export default class Dimension {
   public annotations: Annotations;
@@ -110,112 +110,5 @@ export default class Dimension {
 
   toString(): string {
     return urljoin(this.cube.toString(), this.name);
-  }
-}
-
-export class Hierarchy {
-  public allMemberName: string;
-  public dimension: Dimension;
-  public levels: Level[];
-  public name: string;
-
-  constructor(name: string, allMemberName: string, levels: Level[]) {
-    this.allMemberName = allMemberName;
-    this.levels = levels;
-    this.name = name;
-
-    levels.forEach(lvl => {
-      lvl.hierarchy = this;
-    });
-  }
-
-  static fromJSON(root: JSONObject): Hierarchy {
-    return new Hierarchy(
-      root["name"],
-      root["levels"].map(Level.fromJSON),
-      root["all_member_name"]
-    );
-  }
-
-  get fullName(): string {
-    return `${this.dimension.fullName}.[${this.name}]`;
-  }
-
-  findLevel(levelName: string, elseFirst?: boolean) {
-    const levels = this.levels;
-    const count = levels.length;
-    for (let i = 1; i < count; i++) {
-      if (levels[i].name === levelName) {
-        return levels[i];
-      }
-    }
-    return elseFirst ? levels[1] : null;
-  }
-
-  toJSON(): string {
-    return JSON.stringify({
-      // TODO: clarify keys between underscore case and camelCase
-      all_member_name: this.allMemberName,
-      levels: this.levels,
-      name: this.name
-    });
-  }
-
-  toString() {
-    return urljoin(this.dimension.toString(), "hierarchies", this.name);
-  }
-}
-
-export class Level {
-  public hierarchy: Hierarchy;
-  public name: string;
-  public caption?: string;
-  public fullName: string;
-  public depth: number;
-
-  public annotations: Annotations = {};
-  public properties: string[] = [];
-
-  constructor(name: string) {
-    this.name = name;
-  }
-
-  static fromJSON(root: JSONObject): Level {
-    return new Level(root["name"]);
-  }
-
-  get dimension(): Dimension {
-    return this.hierarchy.dimension;
-  }
-
-  getAnnotation(key: string, defaultValue?: string): string {
-    if (key in this.annotations) {
-      return this.annotations[key];
-    }
-    if (defaultValue === undefined) {
-      throw new AnnotationMissingError(this.fullName, "level", key);
-    }
-    return defaultValue;
-  }
-
-  hasProperty(propertyName: string): boolean {
-    return (
-      this.properties.indexOf(propertyName) > -1 ||
-      LEVEL_INTRINSIC_PROPERTIES.has(propertyName)
-    );
-  }
-
-  membersPath(key?: string | number): string {
-    return urljoin(this.hierarchy.toString(), "levels", this.name, "members", key);
-  }
-
-  toJSON(): string {
-    return JSON.stringify({
-      name: this.name
-    });
-  }
-
-  toString() {
-    return urljoin(this.hierarchy.toString(), "levels", this.name);
   }
 }

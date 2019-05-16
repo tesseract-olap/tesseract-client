@@ -1,7 +1,7 @@
 import {AxiosResponse} from "axios";
 
 export class InvalidServerError extends Error {
-  constructor(url) {
+  constructor(url: string) {
     super(`The URL "${url}" is not a valid Tesseract OLAP server.`);
   }
 }
@@ -30,25 +30,30 @@ export class QueryServerError extends Error {
 }
 
 export class PropertyMissingError extends ReferenceError {
-  constructor(ownerName, ownerType, propName, propType = "property") {
+  constructor(
+    ownerName: string,
+    ownerType: string,
+    propName: string,
+    propType: string = "property"
+  ) {
     super(`The "${propName}" ${propType} doesn't exist in ${ownerType} "${ownerName}".`);
   }
 }
 
 export class AnnotationMissingError extends PropertyMissingError {
-  constructor(ownerName, ownerType, annKey) {
+  constructor(ownerName: string, ownerType: string, annKey: string) {
     super(ownerName, ownerType, annKey, "annotation");
   }
 }
 
 export class DimensionMissingError extends PropertyMissingError {
-  constructor(cubeName, dimName) {
+  constructor(cubeName: string, dimName: string) {
     super(cubeName, "cube", dimName, "dimension");
   }
 }
 
 export class MeasureMissingError extends PropertyMissingError {
-  constructor(cubeName, msrName) {
+  constructor(cubeName: string, msrName: string) {
     super(cubeName, "cube", msrName, "measure");
   }
 }

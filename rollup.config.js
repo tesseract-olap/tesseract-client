@@ -7,7 +7,7 @@ import resolve from "rollup-plugin-node-resolve";
 import typescript from "rollup-plugin-typescript2";
 
 import {
-  browser as browserModulePath,
+  // browser as browserModulePath,
   module as esModulePath,
   main as cjsModulePath
 } from "./package.json";
@@ -21,21 +21,34 @@ export default commandLineArgs => {
     input: "src/index.ts",
     output: [
       {
+        file: cjsModulePath,
+        format: "umd",
+        name: "TesseractOlap",
+        globals: ["axios"],
+        esModule: false
+      },
+      {
         file: esModulePath,
         format: "esm",
         sourcemap
-      },
-      {
-        file: cjsModulePath,
-        format: "cjs",
-        sourcemap
-      },
-      {
-        file: browserModulePath,
-        format: "iife",
-        name: "TesseractClient",
-        sourcemap
       }
+      // {
+      //   file: esModulePath,
+      //   format: "esm",
+      //   sourcemap
+      // },
+      // {
+      //   file: cjsModulePath,
+      //   format: "cjs",
+      //   sourcemap
+      // },
+      // {
+      //   file: browserModulePath,
+      //   format: "iife",
+      //   globals: ["axios"],
+      //   name: "TesseractClient",
+      //   sourcemap
+      // }
     ],
     plugins: [
       replace({
@@ -43,7 +56,9 @@ export default commandLineArgs => {
       }),
       resolve(),
       json(),
-      typescript(),
+      typescript({
+        useTsconfigDeclarationDir: true
+      }),
       commonjs({
         include: ["node_modules/**"],
         namedExports: {}
