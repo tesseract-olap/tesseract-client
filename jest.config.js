@@ -1,11 +1,13 @@
 module.exports = {
-    roots: ["<rootDir>/src/", "<rootDir>/tests/"],
     bail: false, //whether to bail on first test failure
-    testMatch: ['<rootDir>/tests/**/*.test.js'],
-    watchPathIgnorePatterns: ["<rootDir>/node_modules/"],
-    transform: {
-        "^.+\\.js$": "babel-jest"
+    globals: {
+        "CUBE_NAME": "exports_and_imports",
+        "SERVER_URL": "https://data-dev.stat.ee/tesseract/"
     },
+    roots: ["<rootDir>/src/", "<rootDir>/tests/"],
+    testMatch: ['<rootDir>/tests/**/*.test.js'],
+    transform: { "^.+\\.js$": "babel-jest" },
     transformIgnorePatterns: ["<rootDir>/node_modules/"],
-    verbose: true
+    verbose: true,
+    watchPathIgnorePatterns: ["<rootDir>/node_modules/"],
 };

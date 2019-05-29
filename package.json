@@ -6,8 +6,8 @@
   "module": "./dist/esm/index.esm.js",
   "types": "./dist/dts/index.d.ts",
   "scripts": {
-    "test": "cross-env NODE_ENV=test BABEL_ENV=test SERVER_URL=https://data-dev.stat.ee/tesseract/ && jest --config=jest.config.js",
-    "test-watch": "cross-env NODE_ENV=test BABEL_ENV=test SERVER_URL=https://data-dev.stat.ee/tesseract/ && jest --config=jest.config.js --watch",
+    "test": "cross-env NODE_ENV=test BABEL_ENV=test && jest --config=jest.config.js",
+    "test-watch": "cross-env NODE_ENV=test BABEL_ENV=test && jest --config=jest.config.js --watch",
     "dev": "cross-env NODE_ENV=development BABEL_ENV=development rollup --config rollup.config.js --watch",
     "build": "cross-env NODE_ENV=production BABEL_ENV=production rollup --config rollup.config.js"
   },

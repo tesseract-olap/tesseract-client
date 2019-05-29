@@ -1,13 +1,8 @@
-import {
-  Cube,
-  Dimension,
-  Hierarchy,
-  Level,
-  Measure,
-  Member,
-  Query,
-  TesseractServer
-} from "..";
+import {Client, Cube, Dimension, Hierarchy, Level, Measure, Member, Query} from "..";
+
+test("can import class Client", () => {
+  expect(typeof Client.prototype.execQuery).toBe("function");
+});
 
 test("can import class Cube", () => {
   expect(typeof Cube.fromJSON).toBe("function");
@@ -35,8 +30,4 @@ test("can import class Member", () => {
 
 test("can import class Query", () => {
   expect(typeof Query.prototype.getProperty).toBe("function");
-});
-
-test("can import class TesseractServer", () => {
-  expect(typeof TesseractServer.prototype.execQuery).toBe("function");
 });
