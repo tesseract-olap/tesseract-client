@@ -1,6 +1,18 @@
 import {AxiosResponse} from "axios";
 
-export class InvalidServerError extends Error {
+export class NotImplementedError extends Error {
+  constructor() {
+    super("This feature is still not implemented yet.");
+  }
+}
+
+export class NotOnlyCubeError extends Error {
+  constructor(cubeName: string) {
+    super(`A cube named '${cubeName}' is present in more than one server.`);
+  }
+}
+
+export class InvalidServerError extends URIError {
   constructor(url: string) {
     super(`The URL "${url}" is not a valid Tesseract OLAP server.`);
   }
@@ -49,6 +61,12 @@ export class AnnotationMissingError extends PropertyMissingError {
 export class DimensionMissingError extends PropertyMissingError {
   constructor(cubeName: string, dimName: string) {
     super(cubeName, "cube", dimName, "dimension");
+  }
+}
+
+export class LevelMissingError extends PropertyMissingError {
+  constructor(cubeName: string, lvlName: string) {
+    super(cubeName, "cube", lvlName, "level");
   }
 }
 

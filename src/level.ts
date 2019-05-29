@@ -1,6 +1,7 @@
 import urljoin from "url-join";
 
-import {Annotations, JSONObject} from "./common";
+import {Annotations, JSONObject, Property} from "./common";
+import Cube from "./cube";
 import Dimension from "./dimension";
 import {AnnotationMissingError} from "./errors";
 import Hierarchy from "./hierarchy";
@@ -8,26 +9,36 @@ import Hierarchy from "./hierarchy";
 const LEVEL_INTRINSIC_PROPERTIES = ["Caption", "Key", "Name", "UniqueName"];
 
 export default class Level {
-  public caption?: string;
-  public depth: number;
-  public fullName: string;
+  public annotations: Annotations = {};
   public hierarchy: Hierarchy;
   public name: string;
+  public properties: Property[] = [];
 
-  public annotations: Annotations = {};
-  public properties: string[] = [];
-
-  constructor(name: string, annotations: Annotations) {
+  constructor(name: string, annotations: Annotations, properties: Property[]) {
     this.annotations = annotations;
     this.name = name;
+    this.properties = properties;
   }
 
   static fromJSON(root: JSONObject): Level {
-    return new Level(root["name"], root["annotations"]);
+    return new Level(root["name"], root["annotations"], root["properties"]);
+  }
+
+  get cube(): Cube {
+    return this.hierarchy.dimension.cube;
   }
 
   get dimension(): Dimension {
     return this.hierarchy.dimension;
+  }
+
+  get fullName(): string {
+    const nameParts = [this.dimension.name];
+    if (this.dimension.name !== this.hierarchy.name) {
+      nameParts.push(this.hierarchy.name);
+    }
+    nameParts.push(this.name);
+    return nameParts.join(".");
   }
 
   getAnnotation(key: string, defaultValue?: string): string {
@@ -42,18 +53,16 @@ export default class Level {
 
   hasProperty(propertyName: string): boolean {
     return (
-      this.properties.indexOf(propertyName) > -1 ||
+      this.properties.some(prop => prop.name === propertyName) ||
       LEVEL_INTRINSIC_PROPERTIES.indexOf(propertyName) > -1
     );
   }
 
-  membersPath(key?: string): string {
-    return urljoin(this.hierarchy.toString(), "levels", this.name, "members", key);
-  }
-
   toJSON(): string {
     return JSON.stringify({
-      name: this.name
+      annotations: this.annotations,
+      name: this.name,
+      properties: this.properties
     });
   }
 

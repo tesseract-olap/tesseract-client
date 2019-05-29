@@ -3,6 +3,7 @@ import urljoin from "url-join";
 import {JSONObject} from "./common";
 import Dimension from "./dimension";
 import Level from "./level";
+import Cube from "./cube";
 
 export default class Hierarchy {
   public allMemberName: string;
@@ -23,24 +24,28 @@ export default class Hierarchy {
   static fromJSON(root: JSONObject): Hierarchy {
     return new Hierarchy(
       root["name"],
-      root["levels"].map(Level.fromJSON),
-      root["all_member_name"]
+      root["all_member_name"],
+      root["levels"].map(Level.fromJSON)
     );
   }
 
+  get cube(): Cube {
+    return this.dimension.cube;
+  }
+
   get fullName(): string {
-    return `${this.dimension.fullName}.[${this.name}]`;
+    return `${this.dimension.fullName}.${this.name}`;
   }
 
   findLevel(levelName: string, elseFirst?: boolean) {
     const levels = this.levels;
     const count = levels.length;
-    for (let i = 1; i < count; i++) {
+    for (let i = 0; i < count; i++) {
       if (levels[i].name === levelName) {
         return levels[i];
       }
     }
-    return elseFirst ? levels[1] : null;
+    return elseFirst ? levels[0] : null;
   }
 
   toJSON(): string {

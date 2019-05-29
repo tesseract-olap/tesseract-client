@@ -1,12 +1,6 @@
 import urljoin from "url-join";
 
-import {
-  Annotations,
-  DimensionType,
-  dimensionTypeFromString,
-  dimensionTypeToString,
-  JSONObject
-} from "./common";
+import {Annotations, DimensionType, JSONObject} from "./common";
 import Cube from "./cube";
 import {AnnotationMissingError} from "./errors";
 import Hierarchy from "./hierarchy";
@@ -14,23 +8,23 @@ import Level from "./level";
 
 export default class Dimension {
   public annotations: Annotations;
-  public caption: string;
   public cube: Cube;
+  public defaultHierarchy: string;
   public dimensionType: DimensionType;
   public hierarchies: Hierarchy[];
   public name: string;
 
   constructor(
     name: string,
-    caption: string | null,
     dimensionType: DimensionType,
     hierarchies: Hierarchy[],
+    defaultHierarchy: string,
     annotations: Annotations
   ) {
     this.annotations = annotations;
-    this.caption = caption;
     this.dimensionType = dimensionType;
     this.hierarchies = hierarchies;
+    this.defaultHierarchy = defaultHierarchy;
     this.name = name;
 
     hierarchies.forEach(hie => {
@@ -41,15 +35,43 @@ export default class Dimension {
   static fromJSON(root: JSONObject): Dimension {
     return new Dimension(
       root["name"],
-      root["caption"],
-      dimensionTypeFromString(root["type"]),
+      Dimension.typeFromString(root["type"]),
       root["hierarchies"].map(Hierarchy.fromJSON),
+      root["default_hierarchy"],
       root["annotations"]
     );
   }
 
+  static types = DimensionType;
+
+  static typeFromString(value: string): DimensionType {
+    switch (value) {
+      case "time":
+        return DimensionType.Time;
+
+      case "standard":
+      default:
+        return DimensionType.Standard;
+
+      // throw new TypeError(`${value} is not a valid DimensionType`);
+    }
+  }
+
+  static typeToString(dimensionType: DimensionType): string {
+    switch (dimensionType) {
+      case DimensionType.Time:
+        return "time";
+
+      case DimensionType.Standard:
+        return "standard";
+
+      default:
+        throw new TypeError(`${dimensionType} is not a valid DimensionType`);
+    }
+  }
+
   get fullName(): string {
-    return `[${this.name}]`;
+    return this.name;
   }
 
   findHierarchy(hierarchyName: string, elseFirst?: boolean): Hierarchy {
@@ -72,7 +94,7 @@ export default class Dimension {
         return level;
       }
     }
-    return elseFirst ? hierarchies[0].levels[1] : null;
+    return elseFirst ? hierarchies[0].levels[0] : null;
   }
 
   findLevels(levelName: string): Level[] {
@@ -101,14 +123,13 @@ export default class Dimension {
   toJSON(): string {
     return JSON.stringify({
       annotations: this.annotations,
-      caption: this.caption,
-      type: dimensionTypeToString(this.dimensionType),
+      type: Dimension.typeToString(this.dimensionType),
       hierarchies: this.hierarchies,
       name: this.name
     });
   }
 
   toString(): string {
-    return urljoin(this.cube.toString(), this.name);
+    return urljoin(this.cube.toString(), "dimensions", this.name);
   }
 }

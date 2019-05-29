@@ -9,35 +9,27 @@ import {
 } from "./errors";
 import Level from "./level";
 import Measure from "./measure";
-import NamedSet from "./namedset";
 import Query from "./query";
 
 class Cube {
   public annotations: Annotations;
-  public name: string;
-  public caption: string;
   public dimensions: Dimension[];
-  public measures: Measure[];
-  public namedSets: NamedSet[];
-
   public dimensionsByName: {[key: string]: Dimension} = {};
+  public measures: Measure[];
   public measuresByName: {[key: string]: Measure} = {};
+  public name: string;
   public server: string = "/";
 
   constructor(
     name: string,
     annotations: Annotations,
     dimensions: Dimension[],
-    measures: Measure[],
-    namedSets: NamedSet[]
+    measures: Measure[]
   ) {
     this.annotations = annotations;
     this.dimensions = dimensions;
     this.measures = measures;
     this.name = name;
-    this.namedSets = namedSets;
-
-    this.caption = annotations["caption"] || name;
 
     dimensions.forEach(dim => {
       dim.cube = this;
@@ -47,20 +39,19 @@ class Cube {
       msr.cube = this;
       this.measuresByName[msr.name] = msr;
     });
-    namedSets.forEach(nst => {
-      nst.cube = this;
-    });
   }
 
   static fromJSON(root: JSONObject): Cube {
-    const dimensions = root["dimensions"].map(Dimension.fromJSON);
     return new Cube(
       root["name"],
       root["annotations"],
-      dimensions,
-      root["measures"].map(Measure.fromJSON),
-      root["named_sets"].map(NamedSet.fromJSON.bind(null, dimensions))
+      root["dimensions"].map(Dimension.fromJSON),
+      root["measures"].map(Measure.fromJSON)
     );
+  }
+
+  get caption(): string {
+    return this.annotations.caption || this.name;
   }
 
   get defaultMeasure(): Measure {
@@ -69,7 +60,7 @@ class Cube {
   }
 
   get fullName(): string {
-    return `Cube.[${this.name}]`;
+    return `Cube.${this.name}`;
   }
 
   get query(): Query {
@@ -114,17 +105,6 @@ class Cube {
     return foundLevels;
   }
 
-  findNamedSet(namedSetName: string, elseFirst?: boolean): NamedSet {
-    const namedSets = this.namedSets;
-    const count = namedSets.length;
-    for (let i = 0; i < count; i++) {
-      if (namedSets[i].name === namedSetName) {
-        return namedSets[i];
-      }
-    }
-    return elseFirst ? namedSets[0] : null;
-  }
-
   getAnnotation(key: string, defaultValue?: string): string {
     if (key in this.annotations) {
       return this.annotations[key];
@@ -149,26 +129,27 @@ class Cube {
     throw new MeasureMissingError(this.name, measureName);
   }
 
-  queryFullName(fullname: string | string[]): Measure | Dimension | Level {
+  queryFullName(fullName: string | string[]): Measure | Dimension | Level {
     const nameParts =
-      typeof fullname === "string" ? splitFullNameParts(fullname) : fullname;
+      typeof fullName === "string" ? splitFullNameParts(fullName) : fullName;
 
     if (nameParts[0] === "Measure") {
       return this.measuresByName[nameParts[1]];
     }
 
+    // https://github.com/hwchen/tesseract/tree/master/tesseract-server#naming
     const partCount = nameParts.length;
     const dimName = nameParts[0];
-    const hieName = nameParts[1];
-    const lvlName = partCount === 2 ? nameParts[1] : nameParts[2];
 
     const dimension = this.dimensionsByName[dimName];
     if (dimension) {
       if (partCount === 1) {
         return dimension;
       }
+      const hieName = partCount === 2 ? nameParts[0] : nameParts[1];
       const hierarchy = dimension.findHierarchy(hieName);
       if (hierarchy) {
+        const lvlName = partCount === 2 ? nameParts[1] : nameParts[2];
         return hierarchy.findLevel(lvlName);
       }
     }
@@ -181,8 +162,7 @@ class Cube {
       name: this.name,
       annotations: this.annotations,
       dimensions: this.dimensions,
-      measures: this.measures,
-      namedSets: this.namedSets
+      measures: this.measures
     });
   }
 

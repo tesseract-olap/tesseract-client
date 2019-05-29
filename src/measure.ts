@@ -7,33 +7,25 @@ import {AnnotationMissingError} from "./errors";
 class Measure {
   public aggregatorType: AggregatorType;
   public annotations: Annotations;
-  public caption: string;
   public cube: Cube;
-  public fullName: string;
   public name: string;
 
-  constructor(
-    name: string,
-    fullName: string,
-    caption: string,
-    annotations: Annotations,
-    aggregatorType: AggregatorType
-  ) {
+  constructor(name: string, annotations: Annotations, aggregatorType: AggregatorType) {
     this.aggregatorType = aggregatorType;
     this.annotations = annotations;
-    this.caption = caption;
-    this.fullName = fullName;
     this.name = name;
   }
 
   static fromJSON(root: JSONObject) {
     return new Measure(
       root["name"],
-      root["full_name"] || `Measures.[${root["name"]}]`,
-      root["caption"] || root["name"],
       root["annotations"],
       root["aggregator"] || AggregatorType.UNKNOWN
     );
+  }
+
+  get fullName(): string {
+    return `Measures.${this.name}`;
   }
 
   getAnnotation(key: string, defaultValue?: string): string {
@@ -48,11 +40,9 @@ class Measure {
 
   toJSON(): string {
     return JSON.stringify({
-      name: this.name,
-      full_name: this.fullName,
-      caption: this.caption,
+      aggregator: this.aggregatorType,
       annotations: this.annotations,
-      aggregator: this.aggregatorType
+      name: this.name
     });
   }
 
