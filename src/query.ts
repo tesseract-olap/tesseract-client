@@ -1,33 +1,37 @@
 import formurlencoded from "form-urlencoded";
 
-import {splitFullNameParts} from "./common";
+import {AllowedComparisons, QueryOptions} from "./common";
 import Cube from "./cube";
-import {PropertyMissingError} from "./errors";
+import {
+  LevelMissingError,
+  MeasureMissingError,
+  NotImplementedError,
+  PropertyMissingError
+} from "./errors";
 import Level from "./level";
 import Measure from "./measure";
-import NamedSet from "./namedset";
 
-export type Drillable = Level | NamedSet;
+export type Drillable = Level;
 
 class Query {
   public cube: Cube;
 
-  private limit: number;
-  private offset: number;
-  private orderDescendent: boolean;
-  private orderProperty: string;
+  // private limit: number;
+  // private offset: number;
+  // private orderDescendent: boolean;
+  // private orderProperty: string;
   private captions: string[] = [];
   private cuts: string[] = [];
   private drilldowns: Drillable[] = [];
-  private filters: string[] = [];
+  // private filters: string[] = [];
   private measures: Measure[] = [];
   private properties: string[] = [];
-  private options: {[key: string]: boolean} = {
-    nonempty: true,
-    distinct: false,
+  private options: QueryOptions = {
+    // nonempty: true,
+    // distinct: false,
     parents: false,
-    debug: false,
-    sparse: true
+    // debug: false,
+    // sparse: true
   };
 
   constructor(cube: Cube) {
@@ -37,17 +41,17 @@ class Query {
   get searchObject() {
     return {
       ...this.options,
-      caption: this.captions.length ? this.captions : undefined,
+      captions: this.captions.length ? this.captions : undefined,
       cut: this.cuts.length ? this.cuts : undefined,
-      drilldown: this.drilldowns.length
+      drilldowns: this.drilldowns.length
         ? this.drilldowns.map(d => d.fullName)
         : undefined,
-      filter: this.filters.length ? this.filters : undefined,
+      // filter: this.filters.length ? this.filters : undefined,
       measures: this.measures.length ? this.measures.map(m => m.name) : undefined,
-      limit: this.limit,
-      offset: this.offset,
-      order_desc: this.orderDescendent,
-      order: this.orderProperty,
+      // limit: this.limit,
+      // offset: this.offset,
+      // order_desc: this.orderDescendent,
+      // order: this.orderProperty,
       properties: this.properties.length ? this.properties : undefined
     };
   }
@@ -56,42 +60,69 @@ class Query {
     return formurlencoded(this.searchObject);
   }
 
-  addCut(cut: string): Query {
+  addCut(cut: string | Level, members: string[] = []): Query {
+    if (typeof cut !== "string") {
+      if (members.length === 0) {
+        throw new Error(`The cut for the ${cut} object has no members.`);
+      }
+      cut = `${cut.fullName}.${members.join(",")}`;
+    }
+
     this.cuts.push(cut);
     return this;
   }
 
-  addDrilldown(fullName: string | string[]) {
-    const nameParts =
-      typeof fullName === "string" ? splitFullNameParts(fullName) : fullName;
+  addDrilldown(drillable: string | Level): Query {
+    if (typeof drillable === "string") {
+      drillable = this.cube.queryFullName(drillable) as Level;
+    }
 
-    let drillable: Drillable;
-    if (nameParts.length === 1) {
-      drillable = this.cube.findNamedSet(nameParts[0]);
+    if (!drillable.dimension) {
+      throw new TypeError(
+        `Object ${drillable} is not a valid Drillable, or a string that identifies it.`
+      );
     }
-    else {
-      drillable = this.cube.queryFullName(nameParts) as Level;
+    if (drillable.cube !== this.cube) {
+      throw new LevelMissingError(this.cube.name, drillable.fullName);
     }
+
     this.drilldowns.push(drillable);
-
     return this;
   }
 
-  addFilter(measureName: string, comparison: string, value: number): Query {
-    const measure: Measure = this.cube.getMeasure(measureName);
-    const filter = `${measure.name} ${comparison} ${value}`;
-    this.filters.push(filter);
-    return this;
+  addFilter(
+    measure: string | Measure,
+    comparison: AllowedComparisons,
+    value: number
+  ): Query {
+    // if (typeof measure === "string") {
+    //   measure = this.cube.getMeasure(measure);
+    // }
+
+    // if (measure.cube !== this.cube) {
+    //   throw new MeasureMissingError(this.cube.name, measure.name);
+    // }
+
+    // this.filters.push(`${measure.name} ${comparison} ${value}`);
+    // return this;
+    throw new NotImplementedError();
   }
 
-  addMeasure(measureName: string): Query {
-    const measure: Measure = this.cube.getMeasure(measureName);
+  addMeasure(measure: string | Measure): Query {
+    if (typeof measure === "string") {
+      measure = this.cube.getMeasure(measure);
+    }
+
+    if (measure.cube !== this.cube) {
+      throw new MeasureMissingError(this.cube.name, measure.name);
+    }
+
     this.measures.push(measure);
     return this;
   }
 
   addProperty(property: string): Query {
-    return this;
+    throw new NotImplementedError();
   }
 
   assignQuery(query: {[key: string]: any}) {
@@ -115,75 +146,37 @@ class Query {
     list = query.cuts || [];
     count = list.length;
     for (i = 0; i < count; i++) {
-      let item = list[i];
-      if (typeof item !== "string") {
-        const {level, members} = item;
-        item = members.map((key: string | number) => `${level}.&[${key}]`).join(",");
-        if (members.length > 1) {
-          item = `{${item}}`;
-        }
-      }
-      this.addCut(item);
+      this.addCut(list[i]);
     }
 
     // Filters
-    list = query.filters || [];
-    count = list.length;
-    for (i = 0; i < count; i++) {
-      const [measure, comparison, value] = list[i];
-      this.addFilter(measure, comparison, value);
-    }
+    // list = query.filters || [];
+    // count = list.length;
+    // for (i = 0; i < count; i++) {
+    //   const [measure, comparison, value] = list[i];
+    //   this.addFilter(measure, comparison, value);
+    // }
 
-    if (query.limit !== undefined) {
-      query.setPagination(query.limit, query.offset);
-    }
+    // if (query.limit !== undefined) {
+    //   query.setPagination(query.limit, query.offset);
+    // }
 
-    if (query.order !== undefined) {
-      query.setSorting(query.order, query.orderDesc);
-    }
+    // if (query.order !== undefined) {
+    //   query.setSorting(query.order, query.orderDesc);
+    // }
 
     list = Object.keys(query.options || {});
     count = list.length;
     for (i = 0; i < count; i++) {
-      const item = list[i];
-      this.setOption(item, query.options[item]);
+      const key = list[i] as keyof QueryOptions;
+      this.setOption(key, query.options[key]);
     }
 
     return this;
   }
 
-  getOptions(): {[key: string]: boolean} {
+  getOptions(): QueryOptions {
     return {...this.options};
-  }
-
-  setPagination(limit: number, offset: number = 0): Query {
-    if (limit > 0) {
-      this.limit = limit;
-      this.offset = offset;
-    }
-    else {
-      this.limit = undefined;
-      this.offset = undefined;
-    }
-    return this;
-  }
-
-  setSorting(props: string | string[], descendent?: boolean): Query {
-    if (typeof props === "string") {
-      const measure: Measure = this.cube.getMeasure(props);
-      this.orderProperty = measure.fullName;
-    }
-    else {
-      const property: string = this.getProperty(...props);
-      this.orderProperty = property;
-    }
-    this.orderDescendent = descendent;
-    return this;
-  }
-
-  setOption(key: string, value: boolean): Query {
-    this.options[key] = value;
-    return this;
   }
 
   private getProperty(...parts: string[]): string {
@@ -201,6 +194,38 @@ class Query {
     }
 
     throw new PropertyMissingError(level.fullName, "level", pname);
+  }
+
+  setOption(key: keyof QueryOptions, value: boolean): Query {
+    this.options[key] = value;
+    return this;
+  }
+
+  setPagination(limit: number, offset: number = 0): Query {
+    // if (limit > 0) {
+    //   this.limit = limit;
+    //   this.offset = offset;
+    // }
+    // else {
+    //   this.limit = undefined;
+    //   this.offset = undefined;
+    // }
+    // return this;
+    throw new NotImplementedError();
+  }
+
+  setSorting(props: string | string[], descendent?: boolean): Query {
+    // if (typeof props === "string") {
+    //   const measure: Measure = this.cube.getMeasure(props);
+    //   this.orderProperty = measure.fullName;
+    // }
+    // else {
+    //   const property: string = this.getProperty(...props);
+    //   this.orderProperty = property;
+    // }
+    // this.orderDescendent = descendent;
+    // return this;
+    throw new NotImplementedError();
   }
 }
 
