@@ -2,6 +2,8 @@
   "name": "@datawheel/tesseract-client",
   "version": "0.1.0",
   "description": "A javascript client to fetch and work with entities from a tesseract-olap server.",
+  "license": "MIT",
+  "readme": "README.md",
   "main": "./dist/index.cjs.js",
   "module": "./dist/index.esm.js",
   "types": "./dist/dts/index.d.ts",
@@ -36,5 +38,20 @@
     "rollup-plugin-typescript2": "^0.21.0",
     "typescript": "^3.4.5",
     "url-join": "^4.0.0"
-  }
+  },
+  "homepage": "https://github.com/Datawheel/tesseract-client",
+  "author": "Francisco <francisco@datawheel.us>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Datawheel/tesseract-client.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Datawheel/tesseract-client/issues"
+  },
+  "keywords": [
+    "dataset",
+    "datawheel",
+    "olap",
+    "tesseract-olap"
+  ]
 }

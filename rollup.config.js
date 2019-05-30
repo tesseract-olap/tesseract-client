@@ -20,6 +20,13 @@ export default commandLineArgs => {
   return {
     input: "src/index.ts",
     output: [
+      // {
+      //   file: browserModulePath,
+      //   format: "iife",
+      //   globals: ["axios"],
+      //   name: "TesseractOlap",
+      //   sourcemap
+      // },
       {
         file: cjsModulePath,
         format: "umd",
@@ -32,23 +39,6 @@ export default commandLineArgs => {
         format: "esm",
         sourcemap
       }
-      // {
-      //   file: esModulePath,
-      //   format: "esm",
-      //   sourcemap
-      // },
-      // {
-      //   file: cjsModulePath,
-      //   format: "cjs",
-      //   sourcemap
-      // },
-      // {
-      //   file: browserModulePath,
-      //   format: "iife",
-      //   globals: ["axios"],
-      //   name: "TesseractClient",
-      //   sourcemap
-      // }
     ],
     plugins: [
       replace({

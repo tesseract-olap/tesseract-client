@@ -1,12 +1,48 @@
-# tesseract-olap client
+# tesseract-client [![Build Status][travis-img]][travis]
+
+[travis-img]: https://travis-ci.org/Datawheel/tesseract-client.svg
+[travis]: https://travis-ci.org/Datawheel/tesseract-client
 
 A javascript client to fetch and work with entities from a [tesseract-olap](https://www.tesseract-olap.io/) server.
 Heavily inspired by the [mondrian-rest-client](https://github.com/Datawheel/mondrian-rest-client) project, but with some added functionality.
 
-## Building and development use
+## Installation
 
-While this library is in development and not published in npm, you can build it yourself and use it manually.
+```bash
+npm install @datawheel/tesseract-client
+```
 
-To build this library, install the dependencies using `npm install`, and then run `npm run build`. You can also test the built files using `npm test`.
+## Usage
 
-To use the built files in another local project, run `npm link` in the root folder of this project, and then run `npm link tesseract-olap-client` in the root folder of the project where you want to use it. The first command will create a symbolic link from this project to the npm global space; the second command will "install" (create a symbolic link) the package from the npm global space to the node_modules folder in your project.
+The main classes you will want to use are `Client` and `MultiClient`.
+
+```js
+import {Client as TesseractClient} from "@datawheel/tesseract-client";
+
+const client = new TesseractClient(SERVER_URL);
+```
+
+`MultiClient` is a wrapper around the `Client` class, which allows you to use the same public methods as `Client` but with multiple remote servers at once.
+
+```js
+import {MultiClient} from "@datawheel/tesseract-client";
+
+const client = new MultiClient([SERVER1_URL, SERVER2_URL]);
+```
+
+Notice that `MultiClient` can accept a string or an array, while `Client` just accepts a string. If you will with only one tesseract-olap server, you can use both classes, but `Client` will perform better.
+
+All methods in the Client classes return a Promise of the item you are requesting. You can use `.then()` chaining or the `async/await` combo to work with the returned objects:
+
+```js
+function getAllCubeNames(client) {
+  return client.cubes().then(cubes => cubes.map(cube => cube.name));
+}
+
+async function getAllCubeNames(client) {
+  const cubes = await client.cubes();
+  return cubes.map(cube => cube.name);
+}
+```
+
+The package also exports TypeScript definitions for most of the classes used.
