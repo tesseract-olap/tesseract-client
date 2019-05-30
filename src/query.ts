@@ -1,6 +1,6 @@
 import formurlencoded from "form-urlencoded";
 
-import {AllowedComparisons, QueryOptions} from "./common";
+import {AllowedComparison, QueryOptions} from "./common";
 import Cube from "./cube";
 import {
   LevelMissingError,
@@ -29,7 +29,7 @@ class Query {
   private options: QueryOptions = {
     // nonempty: true,
     // distinct: false,
-    parents: false,
+    parents: false
     // debug: false,
     // sparse: true
   };
@@ -92,7 +92,7 @@ class Query {
 
   addFilter(
     measure: string | Measure,
-    comparison: AllowedComparisons,
+    comparison: AllowedComparison,
     value: number
   ): Query {
     // if (typeof measure === "string") {

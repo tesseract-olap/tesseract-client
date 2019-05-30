@@ -7,7 +7,7 @@ export enum AggregatorType {
   UNKNOWN = "UNKNOWN"
 }
 
-export enum AllowedComparisons {
+export enum AllowedComparison {
   eq = "=",
   gt = ">",
   gte = ">=",
