@@ -1,9 +1,9 @@
 {
-  "name": "tesseract-olap-client",
-  "version": "1.0.0-alpha",
+  "name": "@datawheel/tesseract-client",
+  "version": "0.1.0",
   "description": "A javascript client to fetch and work with entities from a tesseract-olap server.",
-  "main": "./dist/cjs/index.cjs.js",
-  "module": "./dist/esm/index.esm.js",
+  "main": "./dist/index.cjs.js",
+  "module": "./dist/index.esm.js",
   "types": "./dist/dts/index.d.ts",
   "scripts": {
     "test": "cross-env NODE_ENV=test BABEL_ENV=test && jest --config=jest.config.js",

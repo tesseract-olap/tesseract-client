@@ -1,0 +1,14 @@
+.rpt2_cache/
+.vscode/
+src/
+tests/
+
+.babelrc
+.editorconfig
+.eslintignore
+.eslintrc
+.gitignore
+jest.config.js
+README.md
+rollup.config.js
+tsconfig.json
