@@ -4,7 +4,10 @@ module.exports = {
         "CUBE_NAME": "exports_and_imports",
         "SERVER_URL": "https://data-dev.stat.ee/tesseract/"
     },
-    roots: ["<rootDir>/src/", "<rootDir>/tests/"],
+    moduleNameMapper: {
+      "@datawheel/tesseract-client": "<rootDir>"
+    },
+    // roots: ["<rootDir>/dist/", "<rootDir>/tests/"],
     testMatch: ['<rootDir>/tests/**/*.test.js'],
     transform: { "^.+\\.js$": "babel-jest" },
     transformIgnorePatterns: ["<rootDir>/node_modules/"],

@@ -1,4 +1,4 @@
-import {Client} from "..";
+import {Client} from "@datawheel/tesseract-client";
 
 const client = new Client(SERVER_URL);
 
@@ -35,10 +35,10 @@ test("can fetch a query", () => {
 
     const level = cube.findLevel(null, true);
     query.addDrilldown(level.name);
-    
+
     const measure = cube.measures[0];
     query.addMeasure(measure.name);
-    
+
     const cut = ''
     query.addCut()
   }).then(query => {

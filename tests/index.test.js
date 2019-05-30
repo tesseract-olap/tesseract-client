@@ -1,4 +1,4 @@
-import {Client, Cube, Dimension, Hierarchy, Level, Measure, Member, Query} from "..";
+import {Client, Cube, Dimension, Hierarchy, Level, Measure, Member, Query} from "@datawheel/tesseract-client";
 
 test("can import class Client", () => {
   expect(typeof Client.prototype.execQuery).toBe("function");
