@@ -14,7 +14,7 @@
     "build": "cross-env NODE_ENV=production BABEL_ENV=production rollup --config rollup.config.js"
   },
   "dependencies": {
-    "axios": "^0.18.0"
+    "axios": "^0.19.0"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
