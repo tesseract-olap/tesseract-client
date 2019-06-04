@@ -35,6 +35,15 @@ export interface Annotations {
   [key: string]: string;
 }
 
+export interface Drillable extends NamedObject {
+  isDrillable: boolean;
+}
+
+export interface NamedObject {
+  name: string;
+  fullName: string;
+}
+
 export interface JSONObject {
   [key: string]: any;
 }

@@ -1,6 +1,6 @@
 import formurlencoded from "form-urlencoded";
 
-import {AllowedComparison, QueryOptions} from "./common";
+import {AllowedComparison, Drillable, QueryOptions} from "./common";
 import Cube from "./cube";
 import {
   LevelMissingError,
@@ -10,8 +10,6 @@ import {
 } from "./errors";
 import Level from "./level";
 import Measure from "./measure";
-
-export type Drillable = Level;
 
 class Query {
   public cube: Cube;
@@ -77,7 +75,7 @@ class Query {
       drillable = this.cube.queryFullName(drillable) as Level;
     }
 
-    if (!drillable.dimension) {
+    if (!drillable.isDrillable) {
       throw new TypeError(
         `Object ${drillable} is not a valid Drillable, or a string that identifies it.`
       );

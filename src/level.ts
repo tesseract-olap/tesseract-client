@@ -1,6 +1,6 @@
 import urljoin from "url-join";
 
-import {Annotations, JSONObject, Property} from "./common";
+import {Annotations, Drillable, JSONObject, Property} from "./common";
 import Cube from "./cube";
 import Dimension from "./dimension";
 import {AnnotationMissingError} from "./errors";
@@ -8,9 +8,10 @@ import Hierarchy from "./hierarchy";
 
 const LEVEL_INTRINSIC_PROPERTIES = ["Caption", "Key", "Name", "UniqueName"];
 
-export default class Level {
+export default class Level implements Drillable {
   public annotations: Annotations = {};
   public hierarchy: Hierarchy;
+  public isDrillable: boolean = true;
   public name: string;
   public properties: Property[] = [];
 
