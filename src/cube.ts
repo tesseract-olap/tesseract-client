@@ -91,7 +91,7 @@ class Cube {
         return level;
       }
     }
-    return elseFirst ? dimensions[0].hierarchies[0].levels[1] : null;
+    return elseFirst ? dimensions[0].hierarchies[0].levels[0] : null;
   }
 
   findLevels(levelName: string): Level[] {

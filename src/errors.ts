@@ -50,6 +50,22 @@ export class QueryServerError extends Error {
   }
 }
 
+export class InvalidDrillable extends TypeError {
+  constructor(object: any) {
+    super(`Object "${object}" is not a valid Drillable.`);
+    this.name = this.constructor.name;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+export class InvalidDrillableIdentifier extends ReferenceError {
+  constructor(identifier: any) {
+    super(`Object "${identifier}" is not a valid identifier for a Drillable.`);
+    this.name = this.constructor.name;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
 export class PropertyMissingError extends ReferenceError {
   constructor(
     ownerName: string,

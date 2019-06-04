@@ -33,7 +33,7 @@ class Client {
   }
 
   checkStatus(): Promise<any> {
-    return axios(this.baseUrl).then(
+    return axios.get(this.baseUrl).then(
       (response: AxiosResponse<JSONObject>) => {
         this.serverVersion = response.data.tesseract_version;
         this.serverOnline = response.data.status;
@@ -140,7 +140,7 @@ class Client {
     }
 
     return axios({url, params}).then((response: AxiosResponse<JSONObject>) =>
-      response.data["members"].map((protoMember: JSONObject) => {
+      response.data["data"].map((protoMember: JSONObject) => {
         const member = Member.fromJSON(protoMember);
         member.level = level;
         return member;

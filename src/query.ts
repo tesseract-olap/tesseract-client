@@ -4,6 +4,8 @@ import urljoin from "url-join";
 import {AllowedComparison, AllowedFormat, Drillable, QueryOptions} from "./common";
 import Cube from "./cube";
 import {
+  InvalidDrillable,
+  InvalidDrillableIdentifier,
   LevelMissingError,
   MeasureMissingError,
   NotImplementedError,
@@ -71,15 +73,17 @@ class Query {
     return this;
   }
 
-  addDrilldown(drillable: string | Level): Query {
-    if (typeof drillable === "string") {
-      drillable = this.cube.queryFullName(drillable) as Level;
-    }
+  addDrilldown(identifier: string | Level): Query {
+    const drillable =
+      typeof identifier === "string"
+        ? this.cube.queryFullName(identifier) as Level
+        : identifier;
 
+    if (!drillable) {
+      throw new InvalidDrillableIdentifier(identifier);
+    }
     if (!drillable.isDrillable) {
-      throw new TypeError(
-        `Object ${drillable} is not a valid Drillable, or a string that identifies it.`
-      );
+      throw new InvalidDrillable(drillable);
     }
     if (drillable.cube !== this.cube) {
       throw new LevelMissingError(this.cube.name, drillable.fullName);
