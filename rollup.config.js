@@ -31,7 +31,9 @@ export default commandLineArgs => {
         file: cjsModulePath,
         format: "umd",
         name: "TesseractOlap",
-        globals: ["axios"],
+        globals: {
+          "axios": "axios"
+        },
         esModule: false
       },
       {

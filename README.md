@@ -30,7 +30,7 @@ import {MultiClient} from "@datawheel/tesseract-client";
 const client = new MultiClient([SERVER1_URL, SERVER2_URL]);
 ```
 
-Notice that `MultiClient` can accept a string or an array, while `Client` just accepts a string. If you will with only one tesseract-olap server, you can use both classes, but `Client` will perform better.
+Notice that `MultiClient` can accept a string or an array, while `Client` just accepts a string. If you intend to work with only one tesseract-olap server, you can use both classes, but `Client` will perform better.
 
 All methods in the Client classes return a Promise of the item you are requesting. You can use `.then()` chaining or the `async/await` combo to work with the returned objects:
 
