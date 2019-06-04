@@ -8,8 +8,6 @@ install: npm ci --ignore-scripts
 before_install:
 - if [[ $TRAVIS_NODE_VERSION -lt 8 ]]; then npm install --global npm@5; fi
 
-before_script: npm run build
-
 cache:
   directories:
   - "$HOME/.npm"

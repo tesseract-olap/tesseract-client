@@ -8,14 +8,16 @@
   "module": "./dist/index.esm.js",
   "types": "./dist/dts/index.d.ts",
   "scripts": {
-    "pretest": "npm run build",
+    "pretest": "cross-env NODE_ENV=test BABEL_ENV=test rollup --config rollup.config.js",
     "test": "cross-env NODE_ENV=test BABEL_ENV=test jest --config=jest.config.js",
     "test-watch": "cross-env NODE_ENV=test BABEL_ENV=test jest --config=jest.config.js --watch",
     "dev": "cross-env NODE_ENV=development BABEL_ENV=development rollup --config rollup.config.js --watch",
     "build": "cross-env NODE_ENV=production BABEL_ENV=production rollup --config rollup.config.js"
   },
   "dependencies": {
-    "axios": "^0.19.0"
+    "axios": "^0.19.0",
+    "form-urlencoded": "^3.0.0",
+    "url-join": "^4.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
@@ -27,7 +29,6 @@
     "babel-jest": "^24.8.0",
     "cross-env": "^5.2.0",
     "eslint": "^5.11.0",
-    "form-urlencoded": "^3.0.0",
     "jest": "^24.8.0",
     "rollup": "^1.12.0",
     "rollup-plugin-babel": "^4.1.0",
@@ -37,8 +38,7 @@
     "rollup-plugin-replace": "^2.1.0",
     "rollup-plugin-terser": "^4.0.0",
     "rollup-plugin-typescript2": "^0.21.0",
-    "typescript": "^3.4.5",
-    "url-join": "^4.0.0"
+    "typescript": "^3.4.5"
   },
   "homepage": "https://github.com/Datawheel/tesseract-client",
   "author": "Francisco <francisco@datawheel.us>",

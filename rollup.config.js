@@ -13,8 +13,18 @@ import {
 } from "./package.json";
 
 const environment = process.env.NODE_ENV;
-const showSourceMaps = environment === "development";
-const sourcemap = showSourceMaps ? "inline" : false;
+const isProduction = environment === "production";
+const isDevelopment = environment === "development";
+const isTesting = environment === "test";
+const sourcemap = isDevelopment ? "inline" : false;
+
+const globals = {
+  "axios": "axios",
+  "url-join": "urljoin",
+  "form-urlencoded": "formurlencoded"
+};
+const external = Object.keys(globals);
+const reserved = external.map(key => globals[key]);
 
 export default commandLineArgs => {
   return {
@@ -23,7 +33,7 @@ export default commandLineArgs => {
       // {
       //   file: browserModulePath,
       //   format: "iife",
-      //   globals: ["axios"],
+      //   globals,
       //   name: "TesseractOlap",
       //   sourcemap
       // },
@@ -31,14 +41,14 @@ export default commandLineArgs => {
         file: cjsModulePath,
         format: "umd",
         name: "TesseractOlap",
-        globals: {
-          "axios": "axios"
-        },
+        globals,
+        external: ["axios"],
         esModule: false
       },
       {
         file: esModulePath,
         format: "esm",
+        external,
         sourcemap
       }
     ],
@@ -58,9 +68,13 @@ export default commandLineArgs => {
       babel({
         exclude: "node_modules/**"
       }),
-      terser({keep_classnames: true})
+      isProduction && terser({
+        keep_classnames: true,
+        keep_fnames: true,
+        mangle: {reserved}
+      })
     ],
-    external: ["axios"],
+    external,
     watch: {
       include: ["src/**"],
       exclude: "node_modules/**",
