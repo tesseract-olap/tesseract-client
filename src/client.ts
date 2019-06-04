@@ -127,11 +127,8 @@ class Client {
     });
   }
 
-  members(
-    level: Level,
-    format: AllowedFormat = AllowedFormat.csv,
-    caption?: string
-  ): Promise<Member[]> {
+  members(level: Level, caption?: string): Promise<Member[]> {
+    const format: AllowedFormat = AllowedFormat.jsonrecords;
     const url = urljoin(level.cube.toString(), `members.${format}`);
     const params: any = {level: level.fullName};
 

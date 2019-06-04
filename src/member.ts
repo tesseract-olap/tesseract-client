@@ -5,27 +5,34 @@ import Level from "./level";
 
 class Member {
   public key: string;
-  public label: string;
+  public name: string;
   public level: Level;
 
-  constructor(key: string, label: string) {
+  constructor(key: string, name: string) {
     this.key = key;
-    this.label = label;
+    this.name = name;
   }
 
   static fromJSON(root: JSONObject) {
     return new Member(root["ID"], root["Label"]);
   }
 
+  get fullName() {
+    return `${this.level.fullName}.${this.key}`;
+  }
+
   toJSON(): string {
     return JSON.stringify({
       ID: this.key,
-      Label: this.label
+      Label: this.name
     });
   }
 
   toString(): string {
-    return urljoin(this.level.cube.toString(), `members?level=${this.key}`);
+    return urljoin(
+      this.level.cube.toString(),
+      `members?level=${this.level.fullName}&key=${this.key}`
+    );
   }
 }
 

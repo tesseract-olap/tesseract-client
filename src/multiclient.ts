@@ -56,10 +56,9 @@ export default class MultiClient {
 
   members(
     level: Level,
-    format: AllowedFormat = AllowedFormat.csv,
     caption?: string
   ): Promise<Member[]> {
     const client = this.getClientByCube(level.cube);
-    return client.members(level, format, caption);
+    return client.members(level, caption);
   }
 }

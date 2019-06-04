@@ -50,8 +50,15 @@ test("can fetch a query", () => {
   });
 });
 
-// TODO: test .members()
-// TODO: test .member("")
+test("can fetch the members of a Level", () => {
+  return client.cube(CUBE_NAME).then(cube => {
+    const level = cube.findLevel(null, true);
+    return client.members(level).then(members => {
+      expect(members.length).toBeGreaterThanOrEqual(0);
+      expect(members[0].level).toBe(level)
+    });
+  });
+});
 
 test("can get the server URL when converting to string", () => {
   const clientAsString = client.toString();
