@@ -7,22 +7,22 @@ test("can create a basic client instance", () => {
 });
 
 test("can ask the server about its version", () => {
-  client.checkStatus().then(() => {
+  return client.checkStatus().then(() => {
     expect(client.serverOnline).toBeDefined();
     expect(client.serverVersion).toBeDefined();
   });
 });
 
 test("can fetch a single cube", () => {
-  client.cube(CUBE_NAME).then(cube => {
+  return client.cube(CUBE_NAME).then(cube => {
     expect(cube.name).toBe(CUBE_NAME);
-    expect(cube.fullName).toBe(`Cube.[${CUBE_NAME}]`);
+    expect(cube.fullName).toBe(`Cube.${CUBE_NAME}`);
     expect(client.cache[CUBE_NAME]).toBeDefined();
   });
 });
 
 test("can fetch all the cubes", () => {
-  client.cubes().then(cubes => {
+  return client.cubes().then(cubes => {
     expect(cubes.length).toBeGreaterThanOrEqual(0);
     expect(client.cacheFilled).toBe(true);
     expect(cubes[0]).toBe(client.cache[CUBE_NAME]);
@@ -30,22 +30,23 @@ test("can fetch all the cubes", () => {
 });
 
 test("can fetch a query", () => {
-  client.cube(CUBE_NAME).then(cube => {
+  return client.cube(CUBE_NAME).then(cube => {
     const query = cube.query;
 
     const level = cube.findLevel(null, true);
-    query.addDrilldown(level.name);
+    query.addDrilldown(level);
 
     const measure = cube.measures[0];
-    query.addMeasure(measure.name);
+    query.addMeasure(measure);
 
-    const cut = ''
-    query.addCut()
-  }).then(query => {
-    client.execQuery(query).then(agg => {
-      expect(agg.url).toBeTruthy();
+    query.setOption("parents", false);
+
+    return client.execQuery(query).then(agg => {
       expect(agg.data).toBeDefined();
       expect(agg.data.length).toBeGreaterThanOrEqual(0);
+      expect(agg.options).toBeDefined();
+      expect(agg.options.parents).toBe(false);
+      expect(agg.url).toBeTruthy();
     });
   });
 });
