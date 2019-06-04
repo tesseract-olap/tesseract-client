@@ -94,7 +94,7 @@ class Client {
 
   execQuery(
     query: Query,
-    format: AllowedFormat = AllowedFormat.csv,
+    format: AllowedFormat = AllowedFormat.jsonrecords,
     method: string = "AUTO"
   ): Promise<Aggregation> {
     const urlroot = urljoin(query.cube.toString(), `aggregate.${format}`);

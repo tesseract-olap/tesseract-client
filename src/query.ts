@@ -1,6 +1,7 @@
 import formurlencoded from "form-urlencoded";
+import urljoin from "url-join";
 
-import {AllowedComparison, Drillable, QueryOptions} from "./common";
+import {AllowedComparison, AllowedFormat, Drillable, QueryOptions} from "./common";
 import Cube from "./cube";
 import {
   LevelMissingError,
@@ -175,6 +176,10 @@ class Query {
 
   getOptions(): QueryOptions {
     return {...this.options};
+  }
+
+  getPath(format: AllowedFormat = AllowedFormat.jsonrecords): string {
+    return urljoin(this.cube.toString(), `aggregate.${format}`, `?${this.searchString}`);
   }
 
   private getProperty(...parts: string[]): string {

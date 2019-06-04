@@ -36,7 +36,7 @@ export default class MultiClient {
 
   execQuery(
     query: Query,
-    format?: AllowedFormat.csv,
+    format?: AllowedFormat.jsonrecords,
     method?: string
   ): Promise<Aggregation> {
     const cube: Cube = query.cube;
@@ -50,7 +50,7 @@ export default class MultiClient {
     return client;
   }
 
-  getClientByCube(cube: Cube): Client {
+  private getClientByCube(cube: Cube): Client {
     return this.clientMap.get(cube) || this.findClientByCube(cube);
   }
 
