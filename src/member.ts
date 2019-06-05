@@ -14,7 +14,7 @@ class Member {
   }
 
   static fromJSON(root: JSONObject) {
-    return new Member(root["ID"], root["Label"]);
+    return new Member(root["ID"], root["Label"] || root["ID"]);
   }
 
   get fullName() {
