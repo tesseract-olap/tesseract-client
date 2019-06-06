@@ -9,7 +9,8 @@ tests/
 .eslintignore
 .eslintrc
 .gitignore
+.travis.yml
+*.md
 jest.config.js
-README.md
 rollup.config.js
 tsconfig.json
