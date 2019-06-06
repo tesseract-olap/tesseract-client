@@ -21,11 +21,11 @@ class Member {
     return `${this.level.fullName}.${this.key}`;
   }
 
-  toJSON(): string {
-    return JSON.stringify({
+  toJSON(): JSONObject {
+    return {
       ID: this.key,
       Label: this.name
-    });
+    };
   }
 
   toString(): string {

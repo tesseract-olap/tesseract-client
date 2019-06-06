@@ -59,12 +59,12 @@ export default class Level implements Drillable {
     );
   }
 
-  toJSON(): string {
-    return JSON.stringify({
+  toJSON(): JSONObject {
+    return {
       annotations: this.annotations,
       name: this.name,
       properties: this.properties
-    });
+    };
   }
 
   toString() {

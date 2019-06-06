@@ -120,13 +120,13 @@ export default class Dimension {
     return defaultValue;
   }
 
-  toJSON(): string {
-    return JSON.stringify({
+  toJSON(): JSONObject {
+    return {
       annotations: this.annotations,
       type: Dimension.typeToString(this.dimensionType),
       hierarchies: this.hierarchies,
       name: this.name
-    });
+    };
   }
 
   toString(): string {

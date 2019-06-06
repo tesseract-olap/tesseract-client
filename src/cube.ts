@@ -157,13 +157,13 @@ class Cube {
     return null;
   }
 
-  toJSON(): string {
-    return JSON.stringify({
+  toJSON(): JSONObject {
+    return {
       name: this.name,
       annotations: this.annotations,
       dimensions: this.dimensions,
       measures: this.measures
-    });
+    };
   }
 
   toString(): string {

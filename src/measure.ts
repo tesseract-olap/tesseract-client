@@ -38,12 +38,12 @@ class Measure {
     return defaultValue;
   }
 
-  toJSON(): string {
-    return JSON.stringify({
+  toJSON(): JSONObject {
+    return {
       aggregator: this.aggregatorType,
       annotations: this.annotations,
       name: this.name
-    });
+    };
   }
 
   toString() {

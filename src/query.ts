@@ -1,7 +1,13 @@
 import formurlencoded from "form-urlencoded";
 import urljoin from "url-join";
 
-import {AllowedComparison, AllowedFormat, Drillable, QueryOptions} from "./common";
+import {
+  AllowedComparison,
+  AllowedFormat,
+  Drillable,
+  JSONObject,
+  QueryOptions
+} from "./common";
 import Cube from "./cube";
 import {
   InvalidDrillable,
@@ -39,26 +45,8 @@ class Query {
     this.cube = cube;
   }
 
-  get searchObject() {
-    return {
-      ...this.options,
-      captions: this.captions.length ? this.captions : undefined,
-      cut: this.cuts.length ? this.cuts : undefined,
-      drilldowns: this.drilldowns.length
-        ? this.drilldowns.map(d => d.fullName)
-        : undefined,
-      // filter: this.filters.length ? this.filters : undefined,
-      measures: this.measures.length ? this.measures.map(m => m.name) : undefined,
-      // limit: this.limit,
-      // offset: this.offset,
-      // order_desc: this.orderDescendent,
-      // order: this.orderProperty,
-      properties: this.properties.length ? this.properties : undefined
-    };
-  }
-
   get searchString() {
-    return formurlencoded(this.searchObject);
+    return formurlencoded(this.toJSON());
   }
 
   addCut(cut: string | Level, members: string[] = []): Query {
@@ -233,6 +221,24 @@ class Query {
     // this.orderDescendent = descendent;
     // return this;
     throw new NotImplementedError();
+  }
+
+  toJSON(): JSONObject {
+    return {
+      ...this.options,
+      captions: this.captions.length ? this.captions : undefined,
+      cut: this.cuts.length ? this.cuts : undefined,
+      drilldowns: this.drilldowns.length
+        ? this.drilldowns.map(d => d.fullName)
+        : undefined,
+      // filter: this.filters.length ? this.filters : undefined,
+      measures: this.measures.length ? this.measures.map(m => m.name) : undefined,
+      // limit: this.limit,
+      // offset: this.offset,
+      // order_desc: this.orderDescendent,
+      // order: this.orderProperty,
+      properties: this.properties.length ? this.properties : undefined
+    };
   }
 }
 

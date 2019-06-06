@@ -48,13 +48,13 @@ export default class Hierarchy {
     return elseFirst ? levels[0] : null;
   }
 
-  toJSON(): string {
-    return JSON.stringify({
+  toJSON(): JSONObject {
+    return {
       // TODO: clarify keys between underscore case and camelCase
       all_member_name: this.allMemberName,
       levels: this.levels,
       name: this.name
-    });
+    };
   }
 
   toString() {
