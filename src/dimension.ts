@@ -42,7 +42,8 @@ export default class Dimension {
     );
   }
 
-  static types = DimensionType;
+  static timeType = DimensionType.Time;
+  static standardType = DimensionType.Standard;
 
   static typeFromString(value: string): DimensionType {
     switch (value) {
