@@ -4,6 +4,7 @@ import urljoin from "url-join";
 import {
   AllowedComparison,
   AllowedFormat,
+  AllowedOrder,
   Drillable,
   JSONObject,
   QueryOptions
@@ -27,12 +28,14 @@ class Query {
   // private offset: number;
   // private orderDescendent: boolean;
   // private orderProperty: string;
+  private calculatedGrowth: string;
+  private calculatedRca: string;
+  private calculatedTop: string;
   private captions: string[] = [];
   private cuts: string[] = [];
   private drilldowns: Drillable[] = [];
   // private filters: string[] = [];
   private measures: Measure[] = [];
-  private properties: string[] = [];
   private options: QueryOptions = {
     // nonempty: true,
     // distinct: false,
@@ -40,6 +43,7 @@ class Query {
     // debug: false,
     // sparse: true
   };
+  private properties: string[] = [];
 
   constructor(cube: Cube) {
     this.cube = cube;
@@ -99,10 +103,11 @@ class Query {
     throw new NotImplementedError();
   }
 
-  addMeasure(measure: string | Measure): Query {
-    if (typeof measure === "string") {
-      measure = this.cube.getMeasure(measure);
-    }
+  addMeasure(measureIdentifier: string | Measure): Query {
+    const measure =
+      typeof measureIdentifier === "string"
+        ? this.cube.getMeasure(measureIdentifier)
+        : measureIdentifier;
 
     if (measure.cube !== this.cube) {
       throw new MeasureMissingError(this.cube.name, measure.name);
@@ -191,6 +196,21 @@ class Query {
     throw new PropertyMissingError(level.fullName, "level", pname);
   }
 
+  setGrowth(lvlRef: string | Level, msrRef: string | Measure): Query {
+    const level = typeof lvlRef === "string" ? this.cube.findLevel(lvlRef) : lvlRef;
+    if (level.cube !== this.cube) {
+      throw new LevelMissingError(this.cube.name, level.name);
+    }
+
+    const measure = typeof msrRef === "string" ? this.cube.getMeasure(msrRef) : msrRef;
+    if (measure.cube !== this.cube) {
+      throw new MeasureMissingError(this.cube.name, measure.name);
+    }
+
+    this.calculatedGrowth = `${level.fullName},${measure.name}`;
+    return this;
+  }
+
   setOption(key: keyof QueryOptions, value: boolean): Query {
     this.options[key] = value;
     return this;
@@ -209,6 +229,30 @@ class Query {
     throw new NotImplementedError();
   }
 
+  setRCA(
+    lvlRef1: string | Level,
+    lvlRef2: string | Level,
+    msrRef: string | Measure
+  ): Query {
+    const level1 = typeof lvlRef1 === "string" ? this.cube.findLevel(lvlRef1) : lvlRef1;
+    if (level1.cube !== this.cube) {
+      throw new LevelMissingError(this.cube.name, level1.name);
+    }
+
+    const level2 = typeof lvlRef2 === "string" ? this.cube.findLevel(lvlRef2) : lvlRef2;
+    if (level2.cube !== this.cube) {
+      throw new LevelMissingError(this.cube.name, level2.name);
+    }
+
+    const measure = typeof msrRef === "string" ? this.cube.getMeasure(msrRef) : msrRef;
+    if (measure.cube !== this.cube) {
+      throw new MeasureMissingError(this.cube.name, measure.name);
+    }
+
+    this.calculatedRca = `${level1.name},${level2.name},${measure.name}`;
+    return this;
+  }
+
   setSorting(props: string | string[], descendent?: boolean): Query {
     // if (typeof props === "string") {
     //   const measure: Measure = this.cube.getMeasure(props);
@@ -223,6 +267,30 @@ class Query {
     throw new NotImplementedError();
   }
 
+  setTop(
+    amount: number,
+    lvlRef: string | Level,
+    msrRef: string | Measure,
+    order: AllowedOrder = AllowedOrder.desc
+  ): Query {
+    if (!isFinite(amount) || isNaN(amount)) {
+      throw new TypeError(`Argument "amount" is not a number, value "${amount}"`);
+    }
+
+    const level = typeof lvlRef === "string" ? this.cube.findLevel(lvlRef) : lvlRef;
+    if (level.cube !== this.cube) {
+      throw new LevelMissingError(this.cube.name, level.name);
+    }
+
+    const measure = typeof msrRef === "string" ? this.cube.getMeasure(msrRef) : msrRef;
+    if (measure.cube !== this.cube) {
+      throw new MeasureMissingError(this.cube.name, measure.name);
+    }
+
+    this.calculatedTop = `${amount},${level.name},${measure.name},${order}`;
+    return this;
+  }
+
   toJSON(): JSONObject {
     return {
       ...this.options,
@@ -232,12 +300,15 @@ class Query {
         ? this.drilldowns.map(d => d.fullName)
         : undefined,
       // filter: this.filters.length ? this.filters : undefined,
+      growth: this.calculatedGrowth,
       measures: this.measures.length ? this.measures.map(m => m.name) : undefined,
       // limit: this.limit,
       // offset: this.offset,
       // order_desc: this.orderDescendent,
       // order: this.orderProperty,
-      properties: this.properties.length ? this.properties : undefined
+      properties: this.properties.length ? this.properties : undefined,
+      rca: this.calculatedRca,
+      top: this.calculatedTop
     };
   }
 }

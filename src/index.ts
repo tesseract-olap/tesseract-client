@@ -1,5 +1,5 @@
 export {default as Client} from "./client";
-export {AggregatorType, AllowedComparison, AllowedFormat} from "./common";
+export {AggregatorType, AllowedComparison, AllowedFormat, AllowedOrder} from "./common";
 export {default as Cube} from "./cube";
 export {default as Dimension} from "./dimension";
 export {default as Hierarchy} from "./hierarchy";

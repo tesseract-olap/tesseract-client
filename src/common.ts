@@ -20,6 +20,11 @@ export enum AllowedFormat {
   jsonrecords = "jsonrecords"
 }
 
+export enum AllowedOrder {
+  asc = "asc",
+  desc = "desc"
+}
+
 export enum DimensionType {
   Standard,
   Time
