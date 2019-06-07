@@ -1,4 +1,4 @@
-import axios, {AxiosResponse} from "axios";
+import axios, {AxiosResponse, AxiosError} from "axios";
 import urljoin from "url-join";
 
 import {
@@ -43,8 +43,9 @@ class Client {
           version: this.serverVersion
         };
       },
-      () => {
+      (err: AxiosError) => {
         this.serverOnline = "unavailable";
+        throw err;
       }
     );
   }

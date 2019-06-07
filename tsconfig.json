@@ -4,6 +4,7 @@
     "declaration": true,
     "declarationDir": "./dist/dts",
     "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
     "noImplicitAny": true,
     "removeComments": false,
     "sourceMap": true,
