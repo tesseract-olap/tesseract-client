@@ -20,6 +20,7 @@ import {
 } from "./errors";
 import Level from "./level";
 import Measure from "./measure";
+import Member from "./member";
 
 class Query {
   public cube: Cube;
@@ -53,11 +54,14 @@ class Query {
     return formurlencoded(this.toJSON());
   }
 
-  addCut(cut: string | Level, members: string[] = []): Query {
+  addCut(cut: string | Level, members: string[] | Member[] = []): Query {
     if (typeof cut !== "string") {
       if (members.length === 0) {
         throw new Error(`The cut for the ${cut} object has no members.`);
       }
+      const memberToString = (member: string | Member): string =>
+        typeof member !== "string" ? member.key : member;
+      members = Array.from(members, memberToString);
       cut = `${cut.fullName}.${members.join(",")}`;
     }
 
@@ -295,7 +299,7 @@ class Query {
     return {
       ...this.options,
       captions: this.captions.length ? this.captions : undefined,
-      cut: this.cuts.length ? this.cuts : undefined,
+      cuts: this.cuts.length ? this.cuts : undefined,
       drilldowns: this.drilldowns.length
         ? this.drilldowns.map(d => d.fullName)
         : undefined,
