@@ -70,9 +70,11 @@ class Query {
   }
 
   addDrilldown(identifier: string | Level): Query {
+    const cube = this.cube;
+
     const drillable =
       typeof identifier === "string"
-        ? this.cube.queryFullName(identifier) as Level
+        ? cube.queryFullName(identifier) as Level
         : identifier;
 
     if (!drillable) {
@@ -81,8 +83,8 @@ class Query {
     if (!drillable.isDrillable) {
       throw new InvalidDrillable(drillable);
     }
-    if (drillable.cube !== this.cube) {
-      throw new LevelMissingError(this.cube.name, drillable.fullName);
+    if (drillable.cube !== cube) {
+      throw new LevelMissingError(cube.name, drillable.fullName);
     }
 
     this.drilldowns.push(drillable);
@@ -108,13 +110,15 @@ class Query {
   }
 
   addMeasure(measureIdentifier: string | Measure): Query {
+    const cube = this.cube;
+
     const measure =
       typeof measureIdentifier === "string"
-        ? this.cube.getMeasure(measureIdentifier)
+        ? cube.getMeasure(measureIdentifier)
         : measureIdentifier;
 
-    if (measure.cube !== this.cube) {
-      throw new MeasureMissingError(this.cube.name, measure.name);
+    if (measure.cube !== cube) {
+      throw new MeasureMissingError(cube.name, measure.name);
     }
 
     this.measures.push(measure);
@@ -201,14 +205,16 @@ class Query {
   }
 
   setGrowth(lvlRef: string | Level, msrRef: string | Measure): Query {
-    const level = typeof lvlRef === "string" ? this.cube.findLevel(lvlRef) : lvlRef;
-    if (level.cube !== this.cube) {
-      throw new LevelMissingError(this.cube.name, level.name);
+    const cube = this.cube;
+
+    const level = typeof lvlRef === "string" ? cube.queryFullName(lvlRef) : lvlRef;
+    if (!level || level.cube !== cube) {
+      throw new LevelMissingError(cube.name, level.name);
     }
 
-    const measure = typeof msrRef === "string" ? this.cube.getMeasure(msrRef) : msrRef;
-    if (measure.cube !== this.cube) {
-      throw new MeasureMissingError(this.cube.name, measure.name);
+    const measure = typeof msrRef === "string" ? cube.getMeasure(msrRef) : msrRef;
+    if (measure.cube !== cube) {
+      throw new MeasureMissingError(cube.name, measure.name);
     }
 
     this.calculatedGrowth = `${level.fullName},${measure.name}`;
@@ -238,19 +244,21 @@ class Query {
     lvlRef2: string | Level,
     msrRef: string | Measure
   ): Query {
-    const level1 = typeof lvlRef1 === "string" ? this.cube.findLevel(lvlRef1) : lvlRef1;
-    if (level1.cube !== this.cube) {
-      throw new LevelMissingError(this.cube.name, level1.name);
+    const cube = this.cube;
+
+    const level1 = typeof lvlRef1 === "string" ? cube.queryFullName(lvlRef1) : lvlRef1;
+    if (!level1 || level1.cube !== cube) {
+      throw new LevelMissingError(cube.name, level1.name);
     }
 
-    const level2 = typeof lvlRef2 === "string" ? this.cube.findLevel(lvlRef2) : lvlRef2;
-    if (level2.cube !== this.cube) {
-      throw new LevelMissingError(this.cube.name, level2.name);
+    const level2 = typeof lvlRef2 === "string" ? cube.queryFullName(lvlRef2) : lvlRef2;
+    if (!level2 || level2.cube !== cube) {
+      throw new LevelMissingError(cube.name, level2.name);
     }
 
-    const measure = typeof msrRef === "string" ? this.cube.getMeasure(msrRef) : msrRef;
-    if (measure.cube !== this.cube) {
-      throw new MeasureMissingError(this.cube.name, measure.name);
+    const measure = typeof msrRef === "string" ? cube.getMeasure(msrRef) : msrRef;
+    if (measure.cube !== cube) {
+      throw new MeasureMissingError(cube.name, measure.name);
     }
 
     this.calculatedRca = `${level1.name},${level2.name},${measure.name}`;
@@ -277,18 +285,20 @@ class Query {
     msrRef: string | Measure,
     order: AllowedOrder = AllowedOrder.desc
   ): Query {
+    const cube = this.cube;
+
     if (!isFinite(amount) || isNaN(amount)) {
       throw new TypeError(`Argument "amount" is not a number, value "${amount}"`);
     }
 
-    const level = typeof lvlRef === "string" ? this.cube.findLevel(lvlRef) : lvlRef;
-    if (level.cube !== this.cube) {
-      throw new LevelMissingError(this.cube.name, level.name);
+    const level = typeof lvlRef === "string" ? cube.queryFullName(lvlRef) : lvlRef;
+    if (!level || level.cube !== cube) {
+      throw new LevelMissingError(cube.name, level.name);
     }
 
-    const measure = typeof msrRef === "string" ? this.cube.getMeasure(msrRef) : msrRef;
-    if (measure.cube !== this.cube) {
-      throw new MeasureMissingError(this.cube.name, measure.name);
+    const measure = typeof msrRef === "string" ? cube.getMeasure(msrRef) : msrRef;
+    if (measure.cube !== cube) {
+      throw new MeasureMissingError(cube.name, measure.name);
     }
 
     this.calculatedTop = `${amount},${level.name},${measure.name},${order}`;
