@@ -44,27 +44,34 @@ export default class Dimension {
 
   static timeType = DimensionType.Time;
   static standardType = DimensionType.Standard;
+  static geographicType = DimensionType.Geographic;
 
   static typeFromString(value: string): DimensionType {
     switch (value) {
+      case "geo":
+      case "geographic":
+        return DimensionType.Geographic;
+
+      case "date":
       case "time":
+      case "year":
         return DimensionType.Time;
 
-      case "standard":
       default:
         return DimensionType.Standard;
-
-      // throw new TypeError(`${value} is not a valid DimensionType`);
     }
   }
 
   static typeToString(dimensionType: DimensionType): string {
     switch (dimensionType) {
-      case DimensionType.Time:
-        return "time";
+      case DimensionType.Geographic:
+        return "geographic";
 
       case DimensionType.Standard:
         return "standard";
+
+      case DimensionType.Time:
+        return "time";
 
       default:
         throw new TypeError(`${dimensionType} is not a valid DimensionType`);

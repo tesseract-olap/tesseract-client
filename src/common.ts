@@ -26,8 +26,9 @@ export enum AllowedOrder {
 }
 
 export enum DimensionType {
-  Standard,
-  Time
+  Geographic = "geo",
+  Standard = "std",
+  Time = "time"
 }
 
 export interface Aggregation {
