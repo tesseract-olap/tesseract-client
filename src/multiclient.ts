@@ -1,8 +1,10 @@
-import {Aggregation, AllowedFormat} from "./common";
+import {AxiosError} from "axios";
+
 import Client from "./client";
+import {Aggregation, AllowedFormat, Arrayify, ServerStatus} from "./common";
 import Cube from "./cube";
-import Level from "./level";
 import {NotOnlyCubeError} from "./errors";
+import Level from "./level";
 import Member from "./member";
 import Query from "./query";
 
@@ -10,9 +12,33 @@ export default class MultiClient {
   private clientList: Client[];
   private clientMap: WeakMap<Cube, Client> = new WeakMap();
 
+  public serverOnline: string[] = [];
+  public serverVersion: string[] = [];
+
   constructor(urls: string | string[]) {
     const apiList = [].concat(urls);
     this.clientList = apiList.map(apiUrl => new Client(apiUrl));
+  }
+
+  checkStatus(): Promise<Arrayify<ServerStatus>> {
+    const tasks = this.clientList.map((client: Client, index: number) =>
+      client.checkStatus().then(
+        (server: ServerStatus) => {
+          this.serverOnline[index] = server.status;
+          this.serverVersion[index] = server.version;
+          return server;
+        },
+        (err: AxiosError) => {
+          this.serverOnline[index] = "unavailable";
+          throw err;
+        }
+      )
+    );
+    return Promise.all(tasks).then((servers: ServerStatus[]) => ({
+      status: this.serverOnline,
+      url: servers.map(server => server.url),
+      version: this.serverVersion
+    }));
   }
 
   cube(
@@ -54,10 +80,7 @@ export default class MultiClient {
     return this.clientMap.get(cube) || this.findClientByCube(cube);
   }
 
-  members(
-    level: Level,
-    caption?: string
-  ): Promise<Member[]> {
+  members(level: Level, caption?: string): Promise<Member[]> {
     const client = this.getClientByCube(level.cube);
     return client.members(level, caption);
   }

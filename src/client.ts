@@ -1,4 +1,4 @@
-import axios, {AxiosResponse, AxiosError} from "axios";
+import axios, {AxiosError, AxiosResponse} from "axios";
 import urljoin from "url-join";
 
 import {
@@ -7,7 +7,8 @@ import {
   Annotations,
   FORMATS,
   JSONObject,
-  MAX_GET_URI_LENGTH
+  MAX_GET_URI_LENGTH,
+  ServerStatus
 } from "./common";
 import Cube from "./cube";
 import {InvalidServerError, PropertyMissingError, QueryServerError} from "./errors";
@@ -32,7 +33,7 @@ class Client {
     this.baseUrl = url;
   }
 
-  checkStatus(): Promise<any> {
+  checkStatus(): Promise<ServerStatus> {
     return axios.get(this.baseUrl).then(
       (response: AxiosResponse<JSONObject>) => {
         this.serverVersion = response.data.tesseract_version;

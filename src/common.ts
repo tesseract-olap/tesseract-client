@@ -66,11 +66,19 @@ export interface QueryOptions {
   sparse?: boolean;
 }
 
+export interface ServerStatus {
+  status: string;
+  url: string;
+  version: string;
+}
+
 export function splitFullNameParts(fullName: string) {
   // this is safe because tesseract splits on dots first
   // https://github.com/hwchen/tesseract/blob/master/tesseract-server/README.md#naming
   return fullName.split(".");
 }
+
+export type Arrayify<T> = {[P in keyof T]: Array<T[P]>};
 
 export const FORMATS: {readonly [K in AllowedFormat]: string} = {
   [AllowedFormat.csv]: "text/csv",
