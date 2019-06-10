@@ -2,17 +2,18 @@ import urljoin from "url-join";
 
 import Cube from "./cube";
 import Dimension from "./dimension";
-import {CubeChild, JSONObject, Named} from "./interfaces";
+import {AnnotationMissingError} from "./errors";
+import {Annotated, Annotations, CubeChild, JSONObject, Named} from "./interfaces";
 import Level from "./level";
 
-class Hierarchy implements CubeChild, Named {
-  public allMemberName: string;
+class Hierarchy implements Annotated, CubeChild, Named {
+  public annotations: Annotations;
   public dimension: Dimension;
   public levels: Level[];
   public name: string;
 
-  constructor(name: string, allMemberName: string, levels: Level[]) {
-    this.allMemberName = allMemberName;
+  constructor(name: string, annotations: Annotations, levels: Level[]) {
+    this.annotations = annotations;
     this.levels = levels;
     this.name = name;
 
@@ -24,7 +25,7 @@ class Hierarchy implements CubeChild, Named {
   static fromJSON(root: JSONObject): Hierarchy {
     return new Hierarchy(
       root["name"],
-      root["all_member_name"],
+      root["annotations"],
       root["levels"].map(Level.fromJSON)
     );
   }
@@ -48,10 +49,20 @@ class Hierarchy implements CubeChild, Named {
     return elseFirst ? levels[0] : null;
   }
 
+  getAnnotation(key: string, defaultValue?: string): string {
+    if (key in this.annotations) {
+      return this.annotations[key];
+    }
+    if (defaultValue === undefined) {
+      throw new AnnotationMissingError(this.name, "cube", key);
+    }
+    return defaultValue;
+  }
+
   toJSON(): JSONObject {
     return {
       // TODO: clarify keys between underscore case and camelCase
-      all_member_name: this.allMemberName,
+      annotations: this.annotations,
       levels: this.levels,
       name: this.name
     };
@@ -62,4 +73,4 @@ class Hierarchy implements CubeChild, Named {
   }
 }
 
-export default Hierarchy
+export default Hierarchy;
