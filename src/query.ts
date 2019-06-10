@@ -1,14 +1,7 @@
 import formurlencoded from "form-urlencoded";
 import urljoin from "url-join";
 
-import {
-  AllowedComparison,
-  AllowedFormat,
-  AllowedOrder,
-  Drillable,
-  JSONObject,
-  QueryOptions
-} from "./common";
+import {AllowedComparison, AllowedFormat, AllowedOrder} from "./common";
 import Cube from "./cube";
 import {
   InvalidDrillable,
@@ -18,6 +11,7 @@ import {
   NotImplementedError,
   PropertyMissingError
 } from "./errors";
+import {Drillable, JSONObject, QueryOptions} from "./interfaces";
 import Level from "./level";
 import Measure from "./measure";
 import Member from "./member";

@@ -1,17 +1,18 @@
 import urljoin from "url-join";
 
-import {Annotations, DimensionType, JSONObject, splitFullNameParts} from "./common";
+import {DimensionType, splitFullNameParts} from "./common";
 import Dimension from "./dimension";
 import {
   AnnotationMissingError,
   DimensionMissingError,
   MeasureMissingError
 } from "./errors";
+import {Annotated, Annotations, JSONObject, Named} from "./interfaces";
 import Level from "./level";
 import Measure from "./measure";
 import Query from "./query";
 
-class Cube {
+class Cube implements Annotated, Named {
   public annotations: Annotations;
   public dimensions: Dimension[];
   public dimensionsByName: {[key: string]: Dimension} = {};

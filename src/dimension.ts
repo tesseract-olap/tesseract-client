@@ -1,12 +1,13 @@
 import urljoin from "url-join";
 
-import {Annotations, DimensionType, JSONObject} from "./common";
+import {DimensionType} from "./common";
 import Cube from "./cube";
 import {AnnotationMissingError} from "./errors";
 import Hierarchy from "./hierarchy";
+import {Annotated, Annotations, CubeChild, JSONObject, Named} from "./interfaces";
 import Level from "./level";
 
-export default class Dimension {
+class Dimension implements Annotated, CubeChild, Named {
   public annotations: Annotations;
   public cube: Cube;
   public defaultHierarchy: string;
@@ -141,3 +142,5 @@ export default class Dimension {
     return urljoin(this.cube.toString(), "dimensions", this.name);
   }
 }
+
+export default Dimension;

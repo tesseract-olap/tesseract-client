@@ -1,9 +1,9 @@
 import urljoin from "url-join";
 
-import {JSONObject} from "./common";
+import {JSONObject, Named} from "./interfaces";
 import Level from "./level";
 
-class Member {
+class Member implements Named {
   public key: string;
   public name: string;
   public level: Level;
@@ -17,7 +17,7 @@ class Member {
     return new Member(root["ID"], root["Label"] || root["ID"]);
   }
 
-  get fullName() {
+  get fullName(): string {
     return `${this.level.fullName}.${this.key}`;
   }
 

@@ -1,17 +1,10 @@
 import axios, {AxiosError, AxiosResponse} from "axios";
 import urljoin from "url-join";
 
-import {
-  Aggregation,
-  AllowedFormat,
-  Annotations,
-  FORMATS,
-  JSONObject,
-  MAX_GET_URI_LENGTH,
-  ServerStatus
-} from "./common";
+import {AllowedFormat, FORMATS, MAX_GET_URI_LENGTH} from "./common";
 import Cube from "./cube";
 import {InvalidServerError, PropertyMissingError, QueryServerError} from "./errors";
+import {Aggregation, Annotations, JSONObject, ServerStatus} from "./interfaces";
 import Level from "./level";
 import Member from "./member";
 import Query from "./query";

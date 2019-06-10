@@ -1,11 +1,11 @@
 import urljoin from "url-join";
 
-import {JSONObject} from "./common";
-import Dimension from "./dimension";
-import Level from "./level";
 import Cube from "./cube";
+import Dimension from "./dimension";
+import {CubeChild, JSONObject, Named} from "./interfaces";
+import Level from "./level";
 
-export default class Hierarchy {
+class Hierarchy implements CubeChild, Named {
   public allMemberName: string;
   public dimension: Dimension;
   public levels: Level[];
@@ -37,7 +37,7 @@ export default class Hierarchy {
     return `${this.dimension.fullName}.${this.name}`;
   }
 
-  findLevel(levelName: string, elseFirst?: boolean) {
+  findLevel(levelName: string, elseFirst?: boolean): Level {
     const levels = this.levels;
     const count = levels.length;
     for (let i = 0; i < count; i++) {
@@ -57,7 +57,9 @@ export default class Hierarchy {
     };
   }
 
-  toString() {
+  toString(): string {
     return urljoin(this.dimension.toString(), "hierarchies", this.name);
   }
 }
+
+export default Hierarchy

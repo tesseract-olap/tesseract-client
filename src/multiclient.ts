@@ -1,14 +1,15 @@
 import {AxiosError} from "axios";
 
 import Client from "./client";
-import {Aggregation, AllowedFormat, Arrayify, ServerStatus} from "./common";
+import {AllowedFormat, Arrayify} from "./common";
 import Cube from "./cube";
 import {NotOnlyCubeError} from "./errors";
+import {Aggregation, ServerStatus} from "./interfaces";
 import Level from "./level";
 import Member from "./member";
 import Query from "./query";
 
-export default class MultiClient {
+class MultiClient {
   private clientList: Client[];
   private clientMap: WeakMap<Cube, Client> = new WeakMap();
 
@@ -85,3 +86,5 @@ export default class MultiClient {
     return client.members(level, caption);
   }
 }
+
+export default MultiClient;

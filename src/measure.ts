@@ -1,10 +1,11 @@
 import urljoin from "url-join";
 
-import {AggregatorType, Annotations, JSONObject} from "./common";
+import {AggregatorType} from "./common";
 import Cube from "./cube";
 import {AnnotationMissingError} from "./errors";
+import {Annotated, Annotations, CubeChild, JSONObject, Named} from "./interfaces";
 
-class Measure {
+class Measure implements Annotated, CubeChild, Named {
   public aggregatorType: AggregatorType;
   public annotations: Annotations;
   public cube: Cube;

@@ -31,48 +31,6 @@ export enum DimensionType {
   Time = "time"
 }
 
-export interface Aggregation {
-  data: any[];
-  url: string;
-  options: QueryOptions;
-}
-
-export interface Annotations {
-  [key: string]: string;
-}
-
-export interface Drillable extends NamedObject {
-  isDrillable: boolean;
-}
-
-export interface NamedObject {
-  name: string;
-  fullName: string;
-}
-
-export interface JSONObject {
-  [key: string]: any;
-}
-
-export interface Property {
-  name: string;
-  annotations: Annotations;
-}
-
-export interface QueryOptions {
-  debug?: boolean;
-  distinct?: boolean;
-  nonempty?: boolean;
-  parents?: boolean;
-  sparse?: boolean;
-}
-
-export interface ServerStatus {
-  status: string;
-  url: string;
-  version: string;
-}
-
 export function splitFullNameParts(fullName: string) {
   // this is safe because tesseract splits on dots first
   // https://github.com/hwchen/tesseract/blob/master/tesseract-server/README.md#naming
