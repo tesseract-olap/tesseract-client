@@ -276,13 +276,15 @@ class Query {
   ): Query {
     const cube = this.cube;
 
-    const level1 = typeof lvlRef1 === "string" ? cube.queryFullName(lvlRef1) : lvlRef1;
-    if (!level1 || level1.cube !== cube) {
+    const level1 =
+      typeof lvlRef1 === "string" ? this.getDrillableOrFail(lvlRef1) : lvlRef1;
+    if (level1.cube !== cube) {
       throw new LevelMissingError(cube.name, level1.name);
     }
 
-    const level2 = typeof lvlRef2 === "string" ? cube.queryFullName(lvlRef2) : lvlRef2;
-    if (!level2 || level2.cube !== cube) {
+    const level2 =
+      typeof lvlRef2 === "string" ? this.getDrillableOrFail(lvlRef2) : lvlRef2;
+    if (level2.cube !== cube) {
       throw new LevelMissingError(cube.name, level2.name);
     }
 
@@ -291,7 +293,7 @@ class Query {
       throw new MeasureMissingError(cube.name, measure.name);
     }
 
-    this.calculatedRca = `${level1.name},${level2.name},${measure.name}`;
+    this.calculatedRca = `${level1.fullName},${level2.fullName},${measure.name}`;
     return this;
   }
 
@@ -331,7 +333,7 @@ class Query {
       throw new MeasureMissingError(cube.name, measure.name);
     }
 
-    this.calculatedTop = `${amount},${level.name},${measure.name},${order}`;
+    this.calculatedTop = `${amount},${level.fullName},${measure.name},${order}`;
     return this;
   }
 
