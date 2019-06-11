@@ -15,8 +15,8 @@ class Client {
   public serverOnline: string;
   public serverVersion: string;
 
-  private cache: {[key: string]: Cube} = {};
-  private cacheFilled: boolean = false;
+  private cache: {[key: string]: Promise<Cube>} = {};
+  private cacheAll: Promise<Cube[]>;
 
   constructor(url: string) {
     if (!url) {
@@ -45,46 +45,45 @@ class Client {
   }
 
   cube(cubeName: string): Promise<Cube> {
-    if (cubeName in this.cache) {
-      const cube = this.cache[cubeName];
-      return Promise.resolve(cube);
-    }
-
     const url = urljoin(this.baseUrl, "cubes", cubeName);
-    return axios.get(url).then((response: AxiosResponse<JSONObject>) => {
-      const cube = Cube.fromJSON(response.data);
-      cube.server = this.baseUrl;
-      this.cache[cube.name] = cube;
-      return cube;
-    });
+    const cubePromise =
+      this.cache[cubeName] ||
+      axios.get(url).then((response: AxiosResponse<JSONObject>) => {
+        const cube = Cube.fromJSON(response.data);
+        cube.server = this.baseUrl;
+        this.cache[cube.name] = Promise.resolve(cube);
+        return cube;
+      });
+    this.cache[cubeName] = cubePromise;
+    return cubePromise;
   }
 
   cubes(): Promise<Cube[]> {
-    if (this.cacheFilled) {
-      const cubes = Object.keys(this.cache).map(cubeName => this.cache[cubeName]);
-      return Promise.resolve(cubes);
-    }
-
     const url = urljoin(this.baseUrl, "cubes");
-    return axios.get(url).then((response: AxiosResponse<JSONObject>) => {
-      const data = response.data;
-      if (Array.isArray(data.cubes)) {
-        this.cacheFilled = true;
-        return data.cubes.map((protoCube: JSONObject) => {
-          if (protoCube.name in this.cache) {
-            return this.cache[protoCube.name];
-          }
-          else {
-            const cube = Cube.fromJSON(protoCube);
-            cube.server = this.baseUrl;
-            this.cache[cube.name] = cube;
-            return cube;
-          }
-        });
-      }
+    const cubePromises =
+      this.cacheAll ||
+      axios.get(url).then((response: AxiosResponse<JSONObject>) => {
+        const data = response.data;
+        if (Array.isArray(data.cubes)) {
+          const cubePromises = data.cubes.map((protoCube: JSONObject) => {
+            if (protoCube.name in this.cache) {
+              return this.cache[protoCube.name];
+            }
+            else {
+              const cube = Cube.fromJSON(protoCube);
+              cube.server = this.baseUrl;
+              const cubePromise = Promise.resolve(cube);
+              this.cache[cube.name] = cubePromise;
+              return cubePromise;
+            }
+          });
+          return Promise.all(cubePromises);
+        }
 
-      throw new InvalidServerError(this.baseUrl);
-    });
+        throw new InvalidServerError(this.baseUrl);
+      });
+    this.cacheAll = cubePromises;
+    return cubePromises;
   }
 
   execQuery(
