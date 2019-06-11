@@ -1,8 +1,8 @@
 module.exports = {
     bail: false, //whether to bail on first test failure
     globals: {
-        "CUBE_NAME": "exports_and_imports",
-        "SERVER_URL": "https://data-dev.stat.ee/tesseract/"
+        "CUBE_NAME": "oec_indicators_i_wdi_a",
+        "SERVER_URL": "https://api.oec.world/tesseract/"
     },
     moduleNameMapper: {
       "@datawheel/tesseract-client": "<rootDir>"
