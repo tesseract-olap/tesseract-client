@@ -3,7 +3,7 @@ import {AxiosError} from "axios";
 import Client from "./client";
 import {AllowedFormat, Arrayify} from "./common";
 import Cube from "./cube";
-import {NotOnlyCubeError} from "./errors";
+import {NotUniqueCubeError} from "./errors";
 import {Aggregation, ServerStatus} from "./interfaces";
 import Level from "./level";
 import Member from "./member";
@@ -50,7 +50,7 @@ class MultiClient {
     return this.cubes().then(cubes => {
       const matches = cubes.filter(cube => cube.name === cubeName);
       if (!sorterFn && matches.length > 1) {
-        throw new NotOnlyCubeError(cubeName);
+        throw new NotUniqueCubeError(cubeName);
       }
       return matches.length === 1 ? matches[0] : sorterFn(matches, clients);
     });

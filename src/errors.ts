@@ -8,7 +8,7 @@ export class NotImplementedError extends Error {
   }
 }
 
-export class NotOnlyCubeError extends Error {
+export class NotUniqueCubeError extends Error {
   constructor(cubeName: string) {
     super(`A cube named '${cubeName}' is present in more than one server.`);
     this.name = this.constructor.name;
