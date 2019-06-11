@@ -59,7 +59,7 @@ export class InvalidDrillable extends TypeError {
 }
 
 export class InvalidDrillableIdentifier extends ReferenceError {
-  constructor(identifier: any) {
+  constructor(identifier: string) {
     super(`Object "${identifier}" is not a valid identifier for a Drillable.`);
     this.name = this.constructor.name;
     Error.captureStackTrace(this, this.constructor);

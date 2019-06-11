@@ -31,6 +31,10 @@ export enum DimensionType {
   Time = "time"
 }
 
+export function pushUnique<T>(target: T[], item: T) {
+  return target.indexOf(item) === -1 ? target.push(item) : target.length;
+}
+
 export function splitFullNameParts(fullName: string) {
   // this is safe because tesseract splits on dots first
   // https://github.com/hwchen/tesseract/blob/master/tesseract-server/README.md#naming

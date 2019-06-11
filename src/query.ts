@@ -1,7 +1,13 @@
 import formurlencoded from "form-urlencoded";
 import urljoin from "url-join";
 
-import {AllowedComparison, AllowedFormat, AllowedOrder} from "./common";
+import {
+  AllowedComparison,
+  AllowedFormat,
+  AllowedOrder,
+  pushUnique,
+  splitFullNameParts
+} from "./common";
 import Cube from "./cube";
 import {
   InvalidDrillable,
@@ -28,9 +34,9 @@ class Query {
   private calculatedTop: string;
   private captions: string[] = [];
   private cuts: string[] = [];
-  private drilldowns: Drillable[] = [];
+  private drilldowns: string[] = [];
   // private filters: string[] = [];
-  private measures: Measure[] = [];
+  private measures: string[] = [];
   private options: QueryOptions = {
     // nonempty: true,
     // distinct: false,
@@ -45,21 +51,46 @@ class Query {
   }
 
   get searchString() {
-    return formurlencoded(this.toJSON());
+    return formurlencoded(this.toJSON(), {
+      ignorenull: true,
+      skipIndex: true,
+      sorted: true
+    });
   }
 
-  addCut(cut: string | Level, members: string[] | Member[] = []): Query {
-    if (typeof cut !== "string") {
-      if (members.length === 0) {
-        throw new Error(`The cut for the ${cut} object has no members.`);
-      }
-      const memberToString = (member: string | Member): string =>
-        typeof member !== "string" ? member.key : member;
-      members = Array.from(members, memberToString);
-      cut = `${cut.fullName}.${members.join(",")}`;
+  addCut(cut: string | Level, memberList: string[] | Member[] = []): Query {
+    let drillable: Drillable, members: string;
+    const memberToString = (member: string | Member): string =>
+      typeof member === "object" ? member.key : member;
+
+    if (!Array.isArray(memberList)) {
+      throw new TypeError(`Invalid parameter while trying to add a cut: memberList parameter must be an array.`);
     }
 
-    this.cuts.push(cut);
+    if (typeof cut === "string") {
+      const drillableParts = splitFullNameParts(cut);
+      const possibleMembers = drillableParts.pop();
+      const possibleDrillableId = drillableParts.join(".");
+
+      if (memberList.length === 0) {
+        drillable = this.getDrillableOrFail(possibleDrillableId);
+        members = possibleMembers;
+      }
+      else {
+        drillable = this.getDrillableOrFail(cut);
+        members = Array.from(memberList, memberToString).join(",");
+      }
+    }
+    else {
+      drillable = cut;
+      if (memberList.length === 0) {
+        throw new Error(`The cut for the ${drillable} object has no members.`);
+      }
+      members = Array.from(memberList, memberToString).join(",");
+    }
+
+    cut = `${drillable.fullName}.${members}`;
+    pushUnique(this.cuts, cut);
     return this;
   }
 
@@ -67,21 +98,13 @@ class Query {
     const cube = this.cube;
 
     const drillable =
-      typeof identifier === "string"
-        ? cube.queryFullName(identifier) as Level
-        : identifier;
+      typeof identifier === "string" ? this.getDrillableOrFail(identifier) : identifier;
 
-    if (!drillable) {
-      throw new InvalidDrillableIdentifier(identifier);
-    }
-    if (!drillable.isDrillable) {
-      throw new InvalidDrillable(drillable);
-    }
     if (drillable.cube !== cube) {
       throw new LevelMissingError(cube.name, drillable.fullName);
     }
 
-    this.drilldowns.push(drillable);
+    pushUnique(this.drilldowns, drillable.fullName);
     return this;
   }
 
@@ -115,7 +138,7 @@ class Query {
       throw new MeasureMissingError(cube.name, measure.name);
     }
 
-    this.measures.push(measure);
+    pushUnique(this.measures, measure.name);
     return this;
   }
 
@@ -178,13 +201,13 @@ class Query {
   }
 
   getPath(format: AllowedFormat = AllowedFormat.jsonrecords): string {
-    return urljoin(this.cube.toString(), `aggregate.${format}`, `?${this.searchString}`);
+    return urljoin(this.cube.toString(), `aggregate.${format}?${this.searchString}`);
   }
 
   private getProperty(...parts: string[]): string {
     if (parts.length < 3) {
       throw new Error(
-        "Property specification must be Dimension.(Hierarchy).Level.Property"
+        "Property specification must be Dimension[.Hierarchy].Level.Property"
       );
     }
 
@@ -196,6 +219,19 @@ class Query {
     }
 
     throw new PropertyMissingError(level.fullName, "level", pname);
+  }
+
+  private getDrillableOrFail(fullName: string): Drillable {
+    const drillable = this.cube.queryFullName(fullName) as Drillable;
+
+    if (!drillable) {
+      throw new InvalidDrillableIdentifier(fullName);
+    }
+    if (!drillable.isDrillable) {
+      throw new InvalidDrillable(drillable);
+    }
+
+    return drillable;
   }
 
   setGrowth(lvlRef: string | Level, msrRef: string | Measure): Query {
@@ -304,12 +340,10 @@ class Query {
       ...this.options,
       captions: this.captions.length ? this.captions : undefined,
       cuts: this.cuts.length ? this.cuts : undefined,
-      drilldowns: this.drilldowns.length
-        ? this.drilldowns.map(d => d.fullName)
-        : undefined,
+      drilldowns: this.drilldowns.length ? this.drilldowns : undefined,
       // filter: this.filters.length ? this.filters : undefined,
       growth: this.calculatedGrowth,
-      measures: this.measures.length ? this.measures.map(m => m.name) : undefined,
+      measures: this.measures.length ? this.measures : undefined,
       // limit: this.limit,
       // offset: this.offset,
       // order_desc: this.orderDescendent,
