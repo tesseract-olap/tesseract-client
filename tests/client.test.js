@@ -24,8 +24,11 @@ test("can fetch a single cube", () => {
 test("can fetch all the cubes", () => {
   return client.cubes().then(cubes => {
     expect(cubes.length).toBeGreaterThanOrEqual(0);
-    expect(client.cacheFilled).toBe(true);
-    expect(cubes[0]).toBe(client.cache[CUBE_NAME]);
+    expect(client.cacheAll).toBeDefined();
+    expect(client.cache[CUBE_NAME]).toBeDefined();
+    return client.cache[CUBE_NAME].then(cube => {
+      expect(cube).toBe(cubes[0]);
+    });
   });
 });
 
@@ -33,7 +36,7 @@ test("can fetch a query", () => {
   return client.cube(CUBE_NAME).then(cube => {
     const query = cube.query;
 
-    const level = cube.findLevel(null, true);
+    const level = cube.findLevel("Date", true);
     query.addDrilldown(level);
 
     const measure = cube.measures[0];
@@ -56,7 +59,7 @@ test("can fetch the members of a Level", () => {
     const level = cube.findLevel(null, true);
     return client.members(level).then(members => {
       expect(members.length).toBeGreaterThanOrEqual(0);
-      expect(members[0].level).toBe(level)
+      expect(members[0].level).toBe(level);
     });
   });
 });
