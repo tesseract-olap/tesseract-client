@@ -23,9 +23,9 @@ class Dimension implements Annotated, CubeChild, Named {
     annotations: Annotations
   ) {
     this.annotations = annotations;
+    this.defaultHierarchy = defaultHierarchy;
     this.dimensionType = dimensionType;
     this.hierarchies = hierarchies;
-    this.defaultHierarchy = defaultHierarchy;
     this.name = name;
 
     hierarchies.forEach(hie => {

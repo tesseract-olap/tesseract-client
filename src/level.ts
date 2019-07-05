@@ -70,6 +70,7 @@ class Level implements Annotated, CubeChild, Drillable, Named {
   toJSON(): JSONObject {
     return {
       annotations: this.annotations,
+      fullName: this.fullName,
       name: this.name,
       properties: this.properties
     };

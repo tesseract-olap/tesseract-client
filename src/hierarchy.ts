@@ -61,8 +61,8 @@ class Hierarchy implements Annotated, CubeChild, Named {
 
   toJSON(): JSONObject {
     return {
-      // TODO: clarify keys between underscore case and camelCase
       annotations: this.annotations,
+      fullName: this.fullName,
       levels: this.levels,
       name: this.name
     };
