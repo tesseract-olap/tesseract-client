@@ -50,12 +50,46 @@ class Query {
     this.cube = cube;
   }
 
-  get searchString() {
-    return formurlencoded(this.toJSON(), {
-      ignorenull: true,
-      skipIndex: true,
-      sorted: true
+  get aggregateObject(): JSONObject {
+    return {
+      ...this.options,
+      captions: this.captions.length ? this.captions : undefined,
+      cuts: this.cuts.length ? this.cuts : undefined,
+      drilldowns: this.drilldowns.length ? this.drilldowns : undefined,
+      // filter: this.filters.length ? this.filters : undefined,
+      growth: this.calculatedGrowth,
+      measures: this.measures.length ? this.measures : undefined,
+      // limit: this.limit,
+      // offset: this.offset,
+      // order_desc: this.orderDescendent,
+      // order: this.orderProperty,
+      properties: this.properties.length ? this.properties : undefined,
+      rca: this.calculatedRca,
+      top: this.calculatedTop
+    };
+  }
+
+  get logicLayerObject(): JSONObject {
+    const cube = this.cube;
+    const output: JSONObject = {
+      ...this.options,
+      cube: cube.name,
+      drilldowns: this.drilldowns.join(",") || undefined,
+      measures: this.measures.join(",") || undefined,
+      growth: this.calculatedGrowth,
+      rca: this.calculatedRca,
+      top: this.calculatedTop
+    };
+
+    this.cuts.forEach(cut => {
+      const levelParts = splitFullNameParts(cut);
+      const members = levelParts.pop();
+      const level = cube.queryFullName(levelParts);
+      // levels need a hidden uniqueName, soon to be implemented
+      output[level.name] = members;
     });
+
+    return output;
   }
 
   addCut(cut: string | Level, memberList: string[] | Member[] = []): Query {
@@ -201,7 +235,25 @@ class Query {
   }
 
   getPath(format: AllowedFormat = AllowedFormat.jsonrecords): string {
-    return urljoin(this.cube.toString(), `aggregate.${format}?${this.searchString}`);
+    return this.getAggregateUrl(format);
+  }
+
+  getAggregateUrl(format: AllowedFormat = AllowedFormat.jsonrecords): string {
+    const parameters = formurlencoded(this.aggregateObject, {
+      ignorenull: true,
+      skipIndex: true,
+      sorted: true
+    });
+    return urljoin(this.cube.toString(), `aggregate.${format}?${parameters}`);
+  }
+
+  getLogicLayerUrl(format: AllowedFormat = AllowedFormat.jsonrecords): string {
+    const parameters = formurlencoded(this.logicLayerObject, {
+      ignorenull: true,
+      skipIndex: true,
+      sorted: true
+    });
+    return urljoin(this.cube.toString(), `data.${format}?${parameters}`);
   }
 
   private getProperty(...parts: string[]): string {
@@ -338,22 +390,11 @@ class Query {
   }
 
   toJSON(): JSONObject {
-    return {
-      ...this.options,
-      captions: this.captions.length ? this.captions : undefined,
-      cuts: this.cuts.length ? this.cuts : undefined,
-      drilldowns: this.drilldowns.length ? this.drilldowns : undefined,
-      // filter: this.filters.length ? this.filters : undefined,
-      growth: this.calculatedGrowth,
-      measures: this.measures.length ? this.measures : undefined,
-      // limit: this.limit,
-      // offset: this.offset,
-      // order_desc: this.orderDescendent,
-      // order: this.orderProperty,
-      properties: this.properties.length ? this.properties : undefined,
-      rca: this.calculatedRca,
-      top: this.calculatedTop
-    };
+    return {cube: this.cube.name, ...this.aggregateObject};
+  }
+
+  toString(): string {
+    return this.getAggregateUrl();
   }
 }
 

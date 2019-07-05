@@ -91,9 +91,7 @@ class Client {
     format: AllowedFormat = AllowedFormat.jsonrecords,
     method: string = "AUTO"
   ): Promise<Aggregation> {
-    const urlroot = urljoin(query.cube.toString(), `aggregate.${format}`);
-    const search = query.searchString;
-    const url = urlroot + `?${search}`;
+    const url = query.getAggregateUrl(format);
 
     if (method == "AUTO") {
       method = url.length > MAX_GET_URI_LENGTH ? "POST" : "GET";
@@ -102,11 +100,12 @@ class Client {
     const headers: any = {Accept: FORMATS[format]};
     const request: any = {url, method, headers};
     if (method == "POST") {
-      request.url = urlroot;
+      const searchParams = url.split("?");
+      request.url = searchParams.shift();
       request.method = "POST";
       request.headers["Content-Type"] =
         "application/x-www-form-urlencoded; charset=utf-8";
-      request["data"] = search;
+      request.data = searchParams.join("?");
     }
 
     return axios(request).then((response: AxiosResponse<JSONObject>) => {
