@@ -1,6 +1,6 @@
 {
   "name": "@datawheel/tesseract-client",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "A javascript client to fetch and work with entities from a tesseract-olap server.",
   "license": "MIT",
   "readme": "README.md",
