@@ -4,7 +4,7 @@
 [travis]: https://travis-ci.org/Datawheel/tesseract-client
 
 A javascript client to fetch and work with entities from a [tesseract-olap](https://www.tesseract-olap.io/) server.
-Heavily inspired by the [mondrian-rest-client](https://github.com/Datawheel/mondrian-rest-client) project, but with some added functionality.
+Heavily inspired by the [`mondrian-rest-client`](https://github.com/Datawheel/mondrian-rest-client) project, but with some added functionality.
 
 ## Installation
 
@@ -30,9 +30,9 @@ import {MultiClient} from "@datawheel/tesseract-client";
 const client = new MultiClient([SERVER1_URL, SERVER2_URL]);
 ```
 
-Notice that `MultiClient` can accept a string or an array, while `Client` just accepts a string. If you intend to work with only one tesseract-olap server, you can use both classes, but `Client` will perform better.
+Notice that `MultiClient` can accept a string or an array, while `Client` just accepts a string. If you intend to work with only one `tesseract-olap` server, you can use both classes, but `Client` will perform better.
 
-All methods in the Client classes return a Promise of the item you are requesting. You can use `.then()` chaining or the `async/await` combo to work with the returned objects:
+All methods in the Client classes return a Promise for the item you are requesting. You can use `.then()` chaining or the `async/await` combo to work with the returned objects:
 
 ```js
 function getAllCubeNames(client) {
@@ -45,4 +45,5 @@ async function getAllCubeNames(client) {
 }
 ```
 
+We have a [migration guide](./Migration.md) for users of `mondrian-rest-client`.
 The package also exports TypeScript definitions for most of the classes used.
