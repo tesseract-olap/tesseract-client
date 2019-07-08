@@ -71,10 +71,12 @@ class Query {
 
   get logicLayerObject(): JSONObject {
     const cube = this.cube;
+    // TODO: implement uniqueName when available
+    const onlyLevelName = (dd: string) => dd.split(".").pop();
     const output: JSONObject = {
       ...this.options,
       cube: cube.name,
-      drilldowns: this.drilldowns.join(",") || undefined,
+      drilldowns: this.drilldowns.map(onlyLevelName).join(",") || undefined,
       measures: this.measures.join(",") || undefined,
       growth: this.calculatedGrowth,
       rca: this.calculatedRca,
@@ -234,26 +236,28 @@ class Query {
     return {...this.options};
   }
 
-  getPath(format: AllowedFormat = AllowedFormat.jsonrecords): string {
+  getPath(format?: AllowedFormat): string {
     return this.getAggregateUrl(format);
   }
 
-  getAggregateUrl(format: AllowedFormat = AllowedFormat.jsonrecords): string {
+  getAggregateUrl(format?: AllowedFormat): string {
+    const dotFormat = format ? `.${format}` : "";
     const parameters = formurlencoded(this.aggregateObject, {
       ignorenull: true,
       skipIndex: true,
       sorted: true
     });
-    return urljoin(this.cube.toString(), `aggregate.${format}?${parameters}`);
+    return urljoin(this.cube.toString(), `aggregate${dotFormat}?${parameters}`);
   }
 
-  getLogicLayerUrl(format: AllowedFormat = AllowedFormat.jsonrecords): string {
+  getLogicLayerUrl(format?: AllowedFormat): string {
+    const dotFormat = format ? `.${format}` : "";
     const parameters = formurlencoded(this.logicLayerObject, {
       ignorenull: true,
       skipIndex: true,
       sorted: true
     });
-    return urljoin(this.cube.toString(), `data.${format}?${parameters}`);
+    return urljoin(this.cube.server, `data${dotFormat}?${parameters}`);
   }
 
   private getProperty(...parts: string[]): string {
