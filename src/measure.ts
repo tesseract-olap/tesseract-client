@@ -48,8 +48,8 @@ class Measure implements Annotated, CubeChild, Named {
     };
   }
 
-  toString() {
-    return urljoin(this.cube.toString(), `#/measures/${this.name}`);
+  toString(): string {
+    return urljoin(this.cube.toString(), `#/measures/${encodeURIComponent(this.name)}`);
   }
 }
 

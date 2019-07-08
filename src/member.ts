@@ -33,7 +33,7 @@ class Member implements Named {
   toString(): string {
     return urljoin(
       this.level.cube.toString(),
-      `members?level=${this.level.fullName}&key=${this.key}`
+      `members?level=${encodeURIComponent(this.level.fullName)}&key=${this.key}`
     );
   }
 }

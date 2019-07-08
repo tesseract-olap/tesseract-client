@@ -70,7 +70,7 @@ class Hierarchy implements Annotated, CubeChild, Named {
   }
 
   toString(): string {
-    return urljoin(this.dimension.toString(), "hierarchies", this.name);
+    return urljoin(this.dimension.toString(), "hierarchies", encodeURIComponent(this.name));
   }
 }
 

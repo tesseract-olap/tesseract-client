@@ -141,7 +141,7 @@ class Dimension implements Annotated, CubeChild, Named {
   }
 
   toString(): string {
-    return urljoin(this.cube.toString(), "dimensions", this.name);
+    return urljoin(this.cube.toString(), "dimensions", encodeURIComponent(this.name));
   }
 }
 

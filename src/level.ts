@@ -77,8 +77,8 @@ class Level implements Annotated, CubeChild, Drillable, Named {
     };
   }
 
-  toString() {
-    return urljoin(this.hierarchy.toString(), "levels", this.name);
+  toString(): string {
+    return urljoin(this.hierarchy.toString(), "levels", encodeURIComponent(this.name));
   }
 }
 

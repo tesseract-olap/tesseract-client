@@ -184,7 +184,7 @@ class Cube implements Annotated, Named {
   }
 
   toString(): string {
-    return urljoin(this.server, "cubes", this.name);
+    return urljoin(this.server, "cubes", encodeURIComponent(this.name));
   }
 }
 
