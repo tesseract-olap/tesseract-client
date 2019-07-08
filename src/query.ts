@@ -40,9 +40,9 @@ class Query {
   private options: QueryOptions = {
     // nonempty: true,
     // distinct: false,
-    parents: false
+    parents: false,
     // debug: false,
-    // sparse: true
+    sparse: true
   };
   private properties: string[] = [];
 
@@ -308,7 +308,9 @@ class Query {
   }
 
   setOption(key: keyof QueryOptions, value: boolean): Query {
-    this.options[key] = value;
+    if (key in this.options) {
+      this.options[key] = value;
+    }
     return this;
   }
 
