@@ -160,10 +160,11 @@ class Cube implements Annotated, Named {
 
   toJSON(): JSONObject {
     return {
-      name: this.name,
       annotations: this.annotations,
       dimensions: this.dimensions,
-      measures: this.measures
+      measures: this.measures,
+      name: this.name,
+      uri: this.toString()
     };
   }
 

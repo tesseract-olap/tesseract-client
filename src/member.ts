@@ -23,8 +23,10 @@ class Member implements Named {
 
   toJSON(): JSONObject {
     return {
-      ID: this.key,
-      Label: this.name
+      fullName: this.fullName,
+      key: this.key,
+      name: this.name,
+      uri: this.toString()
     };
   }
 

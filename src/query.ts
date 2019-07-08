@@ -394,7 +394,14 @@ class Query {
   }
 
   toJSON(): JSONObject {
-    return {cube: this.cube.name, ...this.aggregateObject};
+    const serverUrl = this.cube.server;
+    return {
+      serverUrl,
+      aggregatePath: this.getAggregateUrl().replace(serverUrl, ""),
+      logicLayerPath: this.getLogicLayerUrl().replace(serverUrl, ""),
+      cube: this.cube.name,
+      ...this.aggregateObject
+    };
   }
 
   toString(): string {

@@ -132,9 +132,11 @@ class Dimension implements Annotated, CubeChild, Named {
   toJSON(): JSONObject {
     return {
       annotations: this.annotations,
-      type: Dimension.typeToString(this.dimensionType),
+      fullName: this.fullName,
       hierarchies: this.hierarchies,
-      name: this.name
+      name: this.name,
+      type: Dimension.typeToString(this.dimensionType),
+      uri: this.toString()
     };
   }
 

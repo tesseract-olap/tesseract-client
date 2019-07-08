@@ -43,7 +43,8 @@ class Measure implements Annotated, CubeChild, Named {
     return {
       aggregator: this.aggregatorType,
       annotations: this.annotations,
-      name: this.name
+      name: this.name,
+      uri: this.toString()
     };
   }
 

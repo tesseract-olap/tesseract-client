@@ -64,7 +64,8 @@ class Hierarchy implements Annotated, CubeChild, Named {
       annotations: this.annotations,
       fullName: this.fullName,
       levels: this.levels,
-      name: this.name
+      name: this.name,
+      uri: this.toString()
     };
   }
 

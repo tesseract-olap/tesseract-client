@@ -72,7 +72,8 @@ class Level implements Annotated, CubeChild, Drillable, Named {
       annotations: this.annotations,
       fullName: this.fullName,
       name: this.name,
-      properties: this.properties
+      properties: this.properties,
+      uri: this.toString()
     };
   }
 
