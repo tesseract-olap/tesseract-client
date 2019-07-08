@@ -69,7 +69,7 @@ class Cube implements Annotated, Named {
   }
 
   get standardDimensions(): Dimension[] {
-    return this.dimensions.filter(d => d.dimensionType === DimensionType.Standard);
+    return this.getDimensionsByType(DimensionType.Standard);
   }
 
   get timeDimension(): Dimension {
@@ -77,6 +77,17 @@ class Cube implements Annotated, Named {
     const count = dimensions.length;
     for (let i = 0; i < count; i++) {
       if (dimensions[i].dimensionType === DimensionType.Time) {
+        return dimensions[i];
+      }
+    }
+    return null;
+  }
+
+  get geoDimension(): Dimension {
+    const dimensions = this.dimensions;
+    const count = dimensions.length;
+    for (let i = 0; i < count; i++) {
+      if (dimensions[i].dimensionType === DimensionType.Geographic) {
         return dimensions[i];
       }
     }
@@ -121,6 +132,10 @@ class Cube implements Annotated, Named {
       return this.measuresByName[dimensionName];
     }
     throw new DimensionMissingError(this.name, dimensionName);
+  }
+
+  getDimensionsByType(type: DimensionType): Dimension[] {
+    return this.dimensions.filter(d => d.dimensionType === type);
   }
 
   getMeasure(measureName: string): Measure {
