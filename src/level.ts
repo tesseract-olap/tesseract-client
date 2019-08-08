@@ -1,36 +1,50 @@
 import urljoin from "url-join";
-
+import {joinFullname} from "./common";
 import Cube from "./cube";
 import Dimension from "./dimension";
-import {AnnotationMissingError} from "./errors";
+import {ClientError} from "./errors";
 import Hierarchy from "./hierarchy";
-import {
-  Annotated,
-  Annotations,
-  CubeChild,
-  Drillable,
-  JSONObject,
-  Named,
-  Property
-} from "./interfaces";
+import {Annotated, Annotations, Drillable, Property, Serializable} from "./interfaces";
 
-const LEVEL_INTRINSIC_PROPERTIES = ["Caption", "Key", "Name", "UniqueName"];
+const INTRINSIC_PROPERTIES = ["Caption", "Key", "Name", "UniqueName"];
 
-class Level implements Annotated, CubeChild, Drillable, Named {
+class Level implements Annotated, Drillable, Serializable {
   public annotations: Annotations = {};
+  public caption?: string;
+  public depth: number;
   public hierarchy: Hierarchy;
-  public isDrillable: boolean = true;
   public name: string;
   public properties: Property[] = [];
 
-  constructor(name: string, annotations: Annotations, properties: Property[]) {
+  public readonly isDrillable: boolean = true;
+  private readonly isLevel: boolean = true;
+
+  constructor(
+    name: string,
+    annotations: Annotations,
+    properties: Property[],
+    depth: number,
+    caption: string
+  ) {
     this.annotations = annotations;
+    this.caption = caption || name;
+    this.depth = depth;
     this.name = name;
     this.properties = properties;
   }
 
-  static fromJSON(root: JSONObject): Level {
-    return new Level(root["name"], root["annotations"], root["properties"]);
+  static fromJSON(json: any): Level {
+    return new Level(
+      json["name"],
+      json["annotations"],
+      json["properties"],
+      json["depth"],
+      json["caption"]
+    );
+  }
+
+  static isLevel(obj: any): obj is Level {
+    return Boolean(obj && obj.isLevel);
   }
 
   get cube(): Cube {
@@ -41,13 +55,13 @@ class Level implements Annotated, CubeChild, Drillable, Named {
     return this.hierarchy.dimension;
   }
 
-  get fullName(): string {
+  get fullname(): string {
     const nameParts = [this.dimension.name];
     if (this.dimension.name !== this.hierarchy.name) {
       nameParts.push(this.hierarchy.name);
     }
     nameParts.push(this.name);
-    return nameParts.join(".");
+    return joinFullname(nameParts);
   }
 
   getAnnotation(key: string, defaultValue?: string): string {
@@ -55,22 +69,24 @@ class Level implements Annotated, CubeChild, Drillable, Named {
       return this.annotations[key];
     }
     if (defaultValue === undefined) {
-      throw new AnnotationMissingError(this.fullName, "level", key);
+      throw new ClientError(`Annotation ${key} does not exist in level ${this.fullname}.`);
     }
     return defaultValue;
   }
 
   hasProperty(propertyName: string): boolean {
     return (
-      this.properties.some(prop => prop.name === propertyName) ||
-      LEVEL_INTRINSIC_PROPERTIES.indexOf(propertyName) > -1
+      INTRINSIC_PROPERTIES.indexOf(propertyName) > -1 ||
+      this.properties.some(prop => prop.name === propertyName)
     );
   }
 
-  toJSON(): JSONObject {
+  toJSON(): any {
     return {
       annotations: this.annotations,
-      fullName: this.fullName,
+      caption: this.caption,
+      depth: this.depth,
+      fullname: this.fullname,
       name: this.name,
       properties: this.properties,
       uri: this.toString()

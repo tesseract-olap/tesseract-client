@@ -1,36 +1,38 @@
 import urljoin from "url-join";
-
-import {DimensionType, splitFullNameParts} from "./common";
+import {DimensionType, splitFullname} from "./common";
 import Dimension from "./dimension";
-import {
-  AnnotationMissingError,
-  DimensionMissingError,
-  MeasureMissingError
-} from "./errors";
-import {Annotated, Annotations, JSONObject, Named} from "./interfaces";
+import {ClientError} from "./errors";
+import {Annotated, Annotations, CubeChild, Named, Serializable} from "./interfaces";
 import Level from "./level";
 import Measure from "./measure";
+import NamedSet from "./namedset";
 import Query from "./query";
 
-class Cube implements Annotated, Named {
-  public annotations: Annotations;
+class Cube implements Annotated, Named, Serializable {
+  public annotations: Annotations = {};
   public dimensions: Dimension[];
-  public dimensionsByName: {[key: string]: Dimension} = {};
+  public dimensionsByName: {[name: string]: Dimension} = {};
   public measures: Measure[];
-  public measuresByName: {[key: string]: Measure} = {};
+  public measuresByName: {[name: string]: Measure} = {};
   public name: string;
+  public namedsets: NamedSet[];
+  public namedsetsByName: {[name: string]: NamedSet} = {};
   public server: string = "/";
+
+  private readonly isCube: boolean = true;
 
   constructor(
     name: string,
     annotations: Annotations,
     dimensions: Dimension[],
-    measures: Measure[]
+    measures: Measure[],
+    namedsets: NamedSet[]
   ) {
     this.annotations = annotations;
     this.dimensions = dimensions;
     this.measures = measures;
     this.name = name;
+    this.namedsets = namedsets;
 
     dimensions.forEach(dim => {
       dim.cube = this;
@@ -40,15 +42,32 @@ class Cube implements Annotated, Named {
       msr.cube = this;
       this.measuresByName[msr.name] = msr;
     });
+    namedsets.forEach(nst => {
+      this.namedsetsByName[nst.name] = nst;
+    });
   }
 
-  static fromJSON(root: JSONObject): Cube {
+  static fromJSON(json: any): Cube {
+    const dimensions: Dimension[] = json["dimensions"].map(Dimension.fromJSON);
+    const namedSets = (json["named_sets"] || []).map((ns: any) => {
+      const namedSet = NamedSet.fromJSON(ns);
+      const dim = dimensions.find(d => d.name == ns.dimension);
+      const hie = dim.findHierarchy(ns.hierarchy);
+      namedSet.level = hie.findLevel(ns.level);
+      return namedSet;
+    });
+
     return new Cube(
-      root["name"],
-      root["annotations"],
-      root["dimensions"].map(Dimension.fromJSON),
-      root["measures"].map(Measure.fromJSON)
+      json["name"],
+      json["annotations"],
+      dimensions,
+      json["measures"].map(Measure.fromJSON),
+      namedSets
     );
+  }
+
+  static isCube(obj: any): obj is Cube {
+    return Boolean(obj && obj.isCube);
   }
 
   get caption(): string {
@@ -60,8 +79,8 @@ class Cube implements Annotated, Named {
     return this.measuresByName[measureName] || this.measures[0];
   }
 
-  get fullName(): string {
-    return `Cube.${this.name}`;
+  get fullname(): string {
+    return this.name;
   }
 
   get query(): Query {
@@ -69,29 +88,19 @@ class Cube implements Annotated, Named {
   }
 
   get standardDimensions(): Dimension[] {
-    return this.getDimensionsByType(DimensionType.Standard);
+    return this.findDimensionsByType(DimensionType.Standard);
   }
 
   get timeDimension(): Dimension {
-    const dimensions = this.dimensions;
-    const count = dimensions.length;
-    for (let i = 0; i < count; i++) {
-      if (dimensions[i].dimensionType === DimensionType.Time) {
-        return dimensions[i];
-      }
-    }
-    return null;
+    return this.dimensions.find(d => d.dimensionType === DimensionType.Time);
   }
 
   get geoDimension(): Dimension {
-    const dimensions = this.dimensions;
-    const count = dimensions.length;
-    for (let i = 0; i < count; i++) {
-      if (dimensions[i].dimensionType === DimensionType.Geographic) {
-        return dimensions[i];
-      }
-    }
-    return null;
+    return this.dimensions.find(d => d.dimensionType === DimensionType.Geographic);
+  }
+
+  findDimensionsByType(type: DimensionType): Dimension[] {
+    return this.dimensions.filter(d => d.dimensionType === type);
   }
 
   findLevel(levelName: string, elseFirst?: boolean): Level {
@@ -103,18 +112,7 @@ class Cube implements Annotated, Named {
         return level;
       }
     }
-    return elseFirst ? dimensions[0].hierarchies[0].levels[0] : null;
-  }
-
-  findLevels(levelName: string): Level[] {
-    const foundLevels: Level[] = [];
-    const dimensions = this.dimensions;
-    const count = dimensions.length;
-    for (let i = 0; i < count; i++) {
-      const levels = dimensions[i].findLevels(levelName);
-      foundLevels.push(...levels);
-    }
-    return foundLevels;
+    return elseFirst === true ? dimensions[0].hierarchies[0].levels[0] : null;
   }
 
   getAnnotation(key: string, defaultValue?: string): string {
@@ -122,69 +120,123 @@ class Cube implements Annotated, Named {
       return this.annotations[key];
     }
     if (defaultValue === undefined) {
-      throw new AnnotationMissingError(this.name, "cube", key);
+      throw new ClientError(`Annotation ${key} does not exist in cube ${this.name}.`);
     }
     return defaultValue;
   }
 
-  getDimension(dimensionName: string) {
-    if (dimensionName in this.measuresByName) {
-      return this.measuresByName[dimensionName];
+  getDimension(dimIdentifier: string | Dimension): Dimension {
+    const dimension = Dimension.isDimension(dimIdentifier)
+      ? dimIdentifier
+      : this.dimensionsByName[dimIdentifier];
+
+    if (!Dimension.isDimension(dimension)) {
+      throw new ClientError(`Object ${dimIdentifier} is not a valid dimension identifier`);
     }
-    throw new DimensionMissingError(this.name, dimensionName);
+
+    return this.verifyOwnership(dimension);
   }
 
-  getDimensionsByType(type: DimensionType): Dimension[] {
-    return this.dimensions.filter(d => d.dimensionType === type);
-  }
+  getLevel(lvlIdentifier: string | string[] | Level): Level {
+    const level = Level.isLevel(lvlIdentifier)
+      ? lvlIdentifier
+      : this.queryFullname(lvlIdentifier);
 
-  getMeasure(measureName: string): Measure {
-    if (measureName in this.measuresByName) {
-      return this.measuresByName[measureName];
+    if (!Level.isLevel(level)) {
+      throw new ClientError(`Object ${level} is not a valid level, found using ${lvlIdentifier}`);
     }
-    throw new MeasureMissingError(this.name, measureName);
+
+    return this.verifyOwnership(level);
   }
 
-  queryFullName(fullName: string | string[]): Measure | Dimension | Level {
+  getMeasure(msrIdentifier: string | Measure): Measure {
+    const measure = Measure.isMeasure(msrIdentifier)
+      ? msrIdentifier
+      : this.measuresByName[msrIdentifier];
+
+    if (!Measure.isMeasure(measure)) {
+      throw new ClientError(`Object ${msrIdentifier} is not a valid measure identifier`);
+    }
+
+    return this.verifyOwnership(measure);
+  }
+
+  getNamedSet(nstIdentifier: string | NamedSet): NamedSet {
+    const namedset = NamedSet.isNamedset(nstIdentifier)
+      ? nstIdentifier
+      : this.namedsetsByName[nstIdentifier];
+
+    if (!NamedSet.isNamedset(namedset)) {
+      throw new ClientError(`Object ${nstIdentifier} is not a valid namedset identifier`);
+    }
+
+    return this.verifyOwnership(namedset);
+  }
+
+  queryFullname(fullname: string | string[]): any {
     const nameParts =
-      typeof fullName === "string" ? splitFullNameParts(fullName) : fullName;
+      typeof fullname === "string" ? splitFullname(fullname) : fullname.slice();
 
-    if (nameParts[0] === "Measure") {
+    const name = nameParts[0];
+    if (name === "Measures") {
       return this.measuresByName[nameParts[1]];
     }
-
-    // https://github.com/hwchen/tesseract/tree/master/tesseract-server#naming
-    const partCount = nameParts.length;
-    const dimName = nameParts[0];
-
-    const dimension = this.dimensionsByName[dimName];
-    if (dimension) {
-      if (partCount === 1) {
-        return dimension;
+    if (nameParts.length === 1) {
+      if (name in this.measuresByName) {
+        return this.measuresByName[name];
       }
-      const hieName = partCount === 2 ? nameParts[0] : nameParts[1];
-      const hierarchy = dimension.findHierarchy(hieName);
-      if (hierarchy) {
-        const lvlName = partCount === 2 ? nameParts[1] : nameParts[2];
-        return hierarchy.findLevel(lvlName);
+      else if (name in this.dimensionsByName) {
+        return this.dimensionsByName[name];
+      }
+      else if (name in this.namedsetsByName) {
+        return this.namedsetsByName[name];
       }
     }
+    else {
+      const dimName = nameParts.shift();
+      const dimension = this.dimensionsByName[dimName];
 
-    return null;
+      if (dimension) {
+        const hieName = nameParts.shift();
+        const hierarchy = dimension.findHierarchy(hieName) || dimension.findHierarchy(dimName);
+
+        if (hierarchy) {
+          if (hierarchy.name !== hieName) {}
+          const lvlName = nameParts.shift() || hieName;
+          const level = hierarchy.findLevel(lvlName);
+
+          if (level) {
+            const nstName = nameParts.shift();
+            return this.namedsetsByName[nstName] || level;
+          }
+          return hierarchy;
+        }
+        return dimension;
+      }
+    }
   }
 
-  toJSON(): JSONObject {
+  toJSON(): any {
+    const serialize = (obj: Serializable) => obj.toJSON();
     return {
       annotations: this.annotations,
-      dimensions: this.dimensions,
-      measures: this.measures,
+      dimensions: this.dimensions.map(serialize),
+      measures: this.measures.map(serialize),
       name: this.name,
+      namedsets: this.namedsets.map(serialize),
       uri: this.toString()
     };
   }
 
   toString(): string {
     return urljoin(this.server, "cubes", encodeURIComponent(this.name));
+  }
+
+  private verifyOwnership<T extends CubeChild>(obj: T): T {
+    if (!obj || obj.cube !== this) {
+      throw new ClientError(`Object ${obj} does not belong to cube ${this.name}`);
+    }
+    return obj;
   }
 }
 

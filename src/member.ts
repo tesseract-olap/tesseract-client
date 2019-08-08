@@ -1,29 +1,42 @@
 import urljoin from "url-join";
-
-import {JSONObject, Named} from "./interfaces";
+import {joinFullname, splitFullname} from "./common";
+import {Named, Serializable} from "./interfaces";
 import Level from "./level";
 
-class Member implements Named {
+class Member implements Named, Serializable {
   public key: string;
-  public name: string;
   public level: Level;
+  public name: string;
+
+  private readonly isMember: boolean = true;
 
   constructor(key: string, name: string) {
     this.key = key;
     this.name = name;
   }
 
-  static fromJSON(root: JSONObject) {
-    return new Member(root["ID"], root["Label"] || root["ID"]);
+  static fromJSON(json: any): Member {
+    return new Member(json["ID"], json["Label"] || json["ID"]);
   }
 
-  get fullName(): string {
-    return `${this.level.fullName}.${this.key}`;
+  static isMember(obj: any): obj is Member {
+    return Boolean(obj && obj.isMember);
   }
 
-  toJSON(): JSONObject {
+  get caption(): string {
+    return this.name;
+  }
+
+  get fullname(): string {
+    const nameParts = splitFullname(this.level.fullname);
+    nameParts.push(this.key);
+    return joinFullname(nameParts);
+  }
+
+  toJSON(): any {
     return {
-      fullName: this.fullName,
+      caption: this.caption,
+      fullname: this.fullname,
       key: this.key,
       name: this.name,
       uri: this.toString()
@@ -33,7 +46,7 @@ class Member implements Named {
   toString(): string {
     return urljoin(
       this.level.cube.toString(),
-      `members?level=${encodeURIComponent(this.level.fullName)}&key=${this.key}`
+      `members?level=${encodeURIComponent(this.level.fullname)}&key=${this.key}`
     );
   }
 }

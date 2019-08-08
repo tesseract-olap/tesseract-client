@@ -1,89 +1,77 @@
-import {AxiosError} from "axios";
-
 import Client from "./client";
-import {AllowedFormat, Arrayify} from "./common";
+import {AllowedFormat} from "./common";
 import Cube from "./cube";
-import {NotUniqueCubeError} from "./errors";
+import {ClientError} from "./errors";
 import {Aggregation, ServerStatus} from "./interfaces";
 import Level from "./level";
 import Member from "./member";
 import Query from "./query";
 
 class MultiClient {
-  private clientList: Client[];
-  private clientMap: WeakMap<Cube, Client> = new WeakMap();
+  private clients: {[server: string]: Client} = {};
 
-  public serverOnline: string[] = [];
-  public serverVersion: string[] = [];
-
-  constructor(urls: string | string[]) {
-    const apiList = [].concat(urls);
-    this.clientList = apiList.map(apiUrl => new Client(apiUrl));
+  constructor(serverUrls: string[]) {
+    const clients = this.clients;
+    [].concat(serverUrls).forEach(server => {
+      if (server) {
+        clients[server] = new Client(server);
+      }
+    });
   }
 
-  checkStatus(): Promise<Arrayify<ServerStatus>> {
-    const tasks = this.clientList.map((client: Client, index: number) =>
-      client.checkStatus().then(
-        (server: ServerStatus) => {
-          this.serverOnline[index] = server.status;
-          this.serverVersion[index] = server.version;
-          return server;
-        },
-        (err: AxiosError) => {
-          this.serverOnline[index] = "unavailable";
-          throw err;
-        }
-      )
-    );
-    return Promise.all(tasks).then((servers: ServerStatus[]) => ({
-      status: this.serverOnline,
-      url: servers.map(server => server.url),
-      version: this.serverVersion
-    }));
+  get clientList() {
+    const clients = this.clients;
+    return Object.keys(clients).map(server => clients[server]);
+  }
+
+  checkStatus(): Promise<{[server: string]: ServerStatus | Error}> {
+    const statusMap: {[server: string]: ServerStatus | Error} = {};
+    const tasks = this.clientList.map((client: Client) => {
+      const saveResult = (result: ServerStatus | Error) => {
+        statusMap[client.baseUrl] = result;
+      };
+      return client.checkStatus().then(saveResult, saveResult);
+    });
+    return Promise.all(tasks).then(() => statusMap);
   }
 
   cube(
     cubeName: string,
     sorterFn: (matches: Cube[], clients: Client[]) => Cube
   ): Promise<Cube> {
-    const clients = this.clientList.slice();
+    const clientList = this.clientList;
     return this.cubes().then(cubes => {
       const matches = cubes.filter(cube => cube.name === cubeName);
       if (!sorterFn && matches.length > 1) {
-        throw new NotUniqueCubeError(cubeName);
+        throw new ClientError(`A cube named '${cubeName}' is present in more than one server. Define a sorter function to get the right cube.`);
       }
-      return matches.length === 1 ? matches[0] : sorterFn(matches, clients);
+      return matches.length === 1 ? matches[0] : sorterFn(matches, clientList);
     });
   }
 
   cubes(): Promise<Cube[]> {
-    const promiseCubeList = this.clientList.map(client => client.cubes());
-    return Promise.all(promiseCubeList).then(cubeList => [].concat.apply([], cubeList));
+    const clients = this.clients;
+    const promiseCubeList = Object.keys(clients).map(server => clients[server].cubes());
+    return Promise.all(promiseCubeList).then(cubeList => [].concat(...cubeList));
   }
 
-  execQuery(
-    query: Query,
-    format?: AllowedFormat.jsonrecords,
-    method?: string
-  ): Promise<Aggregation> {
+  execQuery(query: Query, format?: AllowedFormat, method?: string): Promise<Aggregation> {
     const cube: Cube = query.cube;
     const client = this.getClientByCube(cube);
     return client.execQuery(query, format, method);
   }
 
-  private findClientByCube(cube: Cube): Client {
-    const client = this.clientList.find(client => client.baseUrl === cube.server);
-    this.clientMap.set(cube, client);
-    return client;
+  getClientByCube(cube: Cube): Client {
+    return this.clients[cube.server];
   }
 
-  private getClientByCube(cube: Cube): Client {
-    return this.clientMap.get(cube) || this.findClientByCube(cube);
+  member(): Promise<Member> {
+    throw new ClientError("tesseract-olap servers don't have this method yet.");
   }
 
-  members(level: Level, caption?: string): Promise<Member[]> {
+  members(level: Level, getChildren: boolean, caption?: string): Promise<Member[]> {
     const client = this.getClientByCube(level.cube);
-    return client.members(level, caption);
+    return client.members(level, getChildren, caption);
   }
 }
 

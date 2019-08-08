@@ -2,12 +2,16 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "declaration": true,
-    "declarationDir": "./dist/dts",
+    "declarationDir": "./types",
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
     "noImplicitAny": true,
+    "noImplicitReturns": true,
     "removeComments": false,
     "sourceMap": true,
-    "target": "es2015"
-  }
+    "target": "es6"
+  },
+  "include": [
+    "src/**/*"
+  ]
 }

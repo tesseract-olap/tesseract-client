@@ -15,7 +15,7 @@ test("can generate a valid query object", () => {
   expect(query.cube).toBe(globalCube);
 });
 
-describe("can handle drilldowns", () => {
+describe("while handling drilldowns", () => {
   let query, level;
 
   beforeEach(() => {
@@ -28,26 +28,23 @@ describe("can handle drilldowns", () => {
     expect(query.drilldowns.length).toBe(1);
   });
 
-  test("can add a drilldown from a fullName string", () => {
-    query.addDrilldown(level.fullName);
+  test("can add a drilldown from a fullname string", () => {
+    query.addDrilldown(level.fullname);
     expect(query.drilldowns.length).toBe(1);
   });
 
   test("can prevent adding a drilldown twice", () => {
     query.addDrilldown(level);
-    query.addDrilldown(level.fullName);
+    query.addDrilldown(level.fullname);
     expect(query.drilldowns.length).toBe(1);
   });
 });
 
-describe("can handle measures", () => {
+describe("while handling measures", () => {
   let query, measure;
 
-  beforeAll(() => {
-    measure = globalCube.measures[0];
-  });
-
   beforeEach(() => {
+    measure = globalCube.measures[0];
     query = globalCube.query;
   });
 
@@ -62,14 +59,12 @@ describe("can handle measures", () => {
   });
 });
 
-describe("can handle cuts", () => {
+describe("while handling cuts", () => {
   let query, level, members;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     level = globalCube.findLevel(null, true);
-    return globalClient.members(level).then(mem => {
-      members = mem;
-    });
+    members = await globalClient.members(level);
   });
 
   beforeEach(() => {
@@ -83,22 +78,24 @@ describe("can handle cuts", () => {
     expect(memberList.length).toBeGreaterThanOrEqual(1);
 
     query.addCut(level, memberList);
-    expect(query.cuts.length).toBe(1);
+    expect(level.fullname in query.cuts).toBeTruthy();
+    expect(Array.isArray(query.cuts[level.fullname])).toBeTruthy();
   });
 
-  test("can add a cut from a Level.fullName + Member.key[] combo", () => {
-    const levelFullName = level.fullName;
+  test("can add a cut from a Level.fullname + Member.key[] combo", () => {
+    const levelFullName = level.fullname;
     expect(levelFullName).toBeTruthy();
 
     const memberList = members.slice(0, 2).map(m => m.key);
     expect(memberList.length).toBeGreaterThanOrEqual(1);
 
     query.addCut(levelFullName, memberList);
-    expect(query.cuts.length).toBe(1);
+    expect(levelFullName in query.cuts).toBeTruthy();
+    expect(Array.isArray(query.cuts[levelFullName])).toBeTruthy();
   });
 
-  test("can add a cut from a formed cut string", () => {
-    const levelFullName = level.fullName;
+  test("can add a cut from a preformed cut string", () => {
+    const levelFullName = level.fullname;
     expect(levelFullName).toBeTruthy();
 
     const memberList = members.slice(0, 2).map(m => m.key);
@@ -106,25 +103,25 @@ describe("can handle cuts", () => {
 
     const cut = `${levelFullName}.${memberList.join(",")}`;
     query.addCut(cut);
-    expect(query.cuts.length).toBe(1);
+    expect(Object.keys(query.cuts).length).toBe(1);
   });
 
   test("can recognize an invalid cut string", () => {
     // invalid cut structure, can't get a drillable
-    expect(query.addCut.bind(query, "Completely invalid")).toThrow("is not a valid identifier for a Drillable");
-    // invalid drillable fullName
-    expect(query.addCut.bind(query, "FakeDimension.1,2")).toThrow("is not a valid identifier for a Drillable");
+    expect(query.addCut.bind(query, "Completely invalid")).toThrow();
+    // invalid drillable fullname
+    expect(query.addCut.bind(query, "FakeDimension.1,2")).toThrow();
     // non-existent drillable
-    expect(query.addCut.bind(query, "Valid.Fullname.1,2")).toThrow("is not a valid identifier for a Drillable");
+    expect(query.addCut.bind(query, "Valid.Fullname.1,2")).toThrow();
     // non-existent drillable, members through second parameter
-    expect(query.addCut.bind(query, "Valid.Fullname.Structure", [1, 2])).toThrow("is not a valid identifier for a Drillable");
-    // valid dimension fullName, but is not a drillable
-    expect(query.addCut.bind(query, level.dimension.fullName, [1, 2])).toThrow("is not a valid Drillable");
+    expect(query.addCut.bind(query, "Valid.Fullname.Structure", [1, 2])).toThrow();
+    // valid dimension fullname, but is not a drillable
+    expect(query.addCut.bind(query, level.dimension.fullname, [1, 2])).toThrow();
     // members parameter must be an array
-    expect(query.addCut.bind(query, level.fullName, "1,2")).toThrow(TypeError);
-    // members parameter must not be empty
-    expect(query.addCut.bind(query, level, [])).toThrow("object has no members");
+    expect(query.addCut.bind(query, level.fullname, "1,2")).toThrow(TypeError);
+    // members parameter can be empty but nothing will be saved
+    query.addCut(level, []);
     // nothing should have passed
-    expect(query.cuts.length).toBe(0);
+    expect(Object.keys(query.cuts).length).toBe(1);
   })
 });

@@ -1,63 +1,68 @@
 import babel from "rollup-plugin-babel";
+import cleanup from "rollup-plugin-cleanup";
 import commonjs from "rollup-plugin-commonjs";
-import json from "rollup-plugin-json";
-import replace from "rollup-plugin-replace";
 import resolve from "rollup-plugin-node-resolve";
+import replace from "rollup-plugin-replace";
+import license from "rollup-plugin-license";
 import typescript from "rollup-plugin-typescript2";
-
-import {module as esModulePath, main as cjsModulePath} from "./package.json";
+import {execSync} from 'child_process';
+import pkg from "./package.json";
 
 const environment = process.env.NODE_ENV;
 const inProduction = environment === "production";
 const inDevelopment = environment === "development";
-const inTesting = environment === "test";
+
 const sourcemap = inDevelopment ? "inline" : false;
+const LICENSE_HEADER =
+`${pkg.name} ${pkg.version} (${pkg.homepage})
+rev ${execSync('git rev-parse --short HEAD')}
+Copyright 2019 Datawheel, LLC
+Licensed under MIT`;
 
-const globals = {
-  "axios": "axios",
-  "url-join": "urljoin",
-  "form-urlencoded": "formurlencoded"
-};
-const external = Object.keys(globals);
-const reserved = external.map(key => globals[key]);
-
+/** @return {import("rollup").RollupOptions} */
 export default commandLineArgs => {
   return {
     input: "src/index.ts",
     output: [
       {
-        file: cjsModulePath,
-        format: "umd",
-        name: "TesseractOlap",
-        globals,
-        external: ["axios"],
-        esModule: false
+        file: pkg.main,
+        format: "cjs",
+        exports: "named",
+        sourcemap
       },
       {
-        file: esModulePath,
+        file: pkg.module,
         format: "esm",
-        external,
+        exports: "named",
         sourcemap
       }
     ],
+    external: Object.keys({...pkg.dependencies}),
     plugins: [
       replace({
-        ENVIRONMENT: JSON.stringify(environment)
+        ENVIRONMENT: JSON.stringify(environment),
+        "__VERSION__": JSON.stringify(pkg.version)
       }),
-      resolve(),
-      json(),
-      typescript({
-        useTsconfigDeclarationDir: true
-      }),
-      commonjs({
-        include: ["node_modules/**"],
-        namedExports: {}
+      resolve({
+        extensions: [".mjs", ".js", ".jsx", ".ts", ".tsx"],
+        preferBuiltins: true
       }),
       babel({
         exclude: "node_modules/**"
-      })
+      }),
+      typescript({
+        clean: true,
+        rollupCommonJSResolveHack: true,
+        useTsconfigDeclarationDir: true
+      }),
+      commonjs({
+        include: ["node_modules/**"]
+      }),
+      license({
+        banner: LICENSE_HEADER
+      }),
+      cleanup()
     ],
-    external,
     watch: {
       include: ["src/**"],
       exclude: "node_modules/**",

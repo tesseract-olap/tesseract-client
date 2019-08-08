@@ -1,28 +1,29 @@
 import urljoin from "url-join";
-
 import {DimensionType} from "./common";
 import Cube from "./cube";
-import {AnnotationMissingError} from "./errors";
+import {ClientError} from "./errors";
 import Hierarchy from "./hierarchy";
-import {Annotated, Annotations, CubeChild, JSONObject, Named} from "./interfaces";
+import {Annotated, Annotations, CubeChild, Named, Serializable} from "./interfaces";
 import Level from "./level";
 
-class Dimension implements Annotated, CubeChild, Named {
-  public annotations: Annotations;
+class Dimension implements Annotated, CubeChild, Named, Serializable {
+  public annotations: Annotations = {};
   public cube: Cube;
   public defaultHierarchy: string;
   public dimensionType: DimensionType;
   public hierarchies: Hierarchy[];
   public name: string;
 
+  private readonly isDimension: boolean = true;
+
   constructor(
     name: string,
+    annotations: Annotations,
     dimensionType: DimensionType,
     hierarchies: Hierarchy[],
-    defaultHierarchy: string,
-    annotations: Annotations
+    defaultHierarchy: string
   ) {
-    this.annotations = annotations;
+    this.annotations = annotations || {};
     this.defaultHierarchy = defaultHierarchy;
     this.dimensionType = dimensionType;
     this.hierarchies = hierarchies;
@@ -33,14 +34,18 @@ class Dimension implements Annotated, CubeChild, Named {
     });
   }
 
-  static fromJSON(root: JSONObject): Dimension {
+  static fromJSON(json: any): Dimension {
     return new Dimension(
-      root["name"],
-      Dimension.typeFromString(root["type"]),
-      root["hierarchies"].map(Hierarchy.fromJSON),
-      root["default_hierarchy"],
-      root["annotations"]
+      json["name"],
+      json["annotations"],
+      Dimension.typeFromString(json["type"]),
+      json["hierarchies"].map(Hierarchy.fromJSON),
+      json["default_hierarchy"]
     );
+  }
+
+  static isDimension(obj: any): obj is Dimension {
+    return Boolean(obj && obj.isDimension);
   }
 
   static timeType = DimensionType.Time;
@@ -79,7 +84,11 @@ class Dimension implements Annotated, CubeChild, Named {
     }
   }
 
-  get fullName(): string {
+  get caption(): string {
+    return this.annotations["caption"] || this.name;
+  }
+
+  get fullname(): string {
     return this.name;
   }
 
@@ -91,7 +100,7 @@ class Dimension implements Annotated, CubeChild, Named {
         return hierarchies[i];
       }
     }
-    return elseFirst ? hierarchies[0] : null;
+    return elseFirst === true ? hierarchies[0] : null;
   }
 
   findLevel(levelName: string, elseFirst?: boolean): Level {
@@ -103,20 +112,7 @@ class Dimension implements Annotated, CubeChild, Named {
         return level;
       }
     }
-    return elseFirst ? hierarchies[0].levels[0] : null;
-  }
-
-  findLevels(levelName: string): Level[] {
-    const foundLevels = [];
-    const hierarchies = this.hierarchies;
-    const count = hierarchies.length;
-    for (let i = 0; i < count; i++) {
-      const level = hierarchies[i].findLevel(levelName);
-      if (level) {
-        foundLevels.push(level);
-      }
-    }
-    return foundLevels;
+    return elseFirst === true ? hierarchies[0].levels[0] : null;
   }
 
   getAnnotation(key: string, defaultValue?: string): string {
@@ -124,16 +120,18 @@ class Dimension implements Annotated, CubeChild, Named {
       return this.annotations[key];
     }
     if (defaultValue === undefined) {
-      throw new AnnotationMissingError(this.fullName, "dimension", key);
+      throw new ClientError(`Annotation ${key} does not exist in dimension ${this.name}.`);
     }
     return defaultValue;
   }
 
-  toJSON(): JSONObject {
+  toJSON(): any {
+    const serialize = (obj: Serializable) => obj.toJSON();
     return {
       annotations: this.annotations,
-      fullName: this.fullName,
-      hierarchies: this.hierarchies,
+      caption: this.caption,
+      fullname: this.fullname,
+      hierarchies: this.hierarchies.map(serialize),
       name: this.name,
       type: Dimension.typeToString(this.dimensionType),
       uri: this.toString()

@@ -1,4 +1,4 @@
-import {Cube} from ".";
+import Cube from "./cube";
 
 export interface Aggregation {
   data: any[];
@@ -21,16 +21,12 @@ export interface CubeChild {
 }
 
 export interface Drillable extends CubeChild, Named {
-  isDrillable: boolean;
+  readonly isDrillable: boolean;
 }
 
 export interface Named {
   name: string;
-  fullName: string;
-}
-
-export interface JSONObject {
-  [key: string]: any;
+  fullname: string;
 }
 
 export interface Property {
@@ -44,6 +40,10 @@ export interface QueryOptions {
   nonempty?: boolean;
   parents?: boolean;
   sparse?: boolean;
+}
+
+export interface Serializable {
+  toJSON(): any;
 }
 
 export interface ServerStatus {

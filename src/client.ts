@@ -1,36 +1,34 @@
 import axios, {AxiosError, AxiosResponse} from "axios";
 import urljoin from "url-join";
-
 import {AllowedFormat, FORMATS, MAX_GET_URI_LENGTH} from "./common";
 import Cube from "./cube";
-import {InvalidServerError, PropertyMissingError, QueryServerError} from "./errors";
-import {Aggregation, Annotations, JSONObject, ServerStatus} from "./interfaces";
+import {ClientError, ServerError} from "./errors";
+import {Aggregation, Annotations, ServerStatus} from "./interfaces";
 import Level from "./level";
 import Member from "./member";
 import Query from "./query";
 
 class Client {
   public annotations: Annotations = {};
-  public baseUrl: string;
-  public serverOnline: string;
-  public serverVersion: string;
+  public baseUrl: string = "";
+  public serverOnline: string = "";
+  public serverVersion: string = "";
 
-  private cache: {[key: string]: Promise<Cube>} = {};
-  private cacheAll: Promise<Cube[]>;
+  private cacheCube: {[key: string]: Promise<Cube>} = {};
+  private cacheCubes: Promise<Cube[]>;
 
   constructor(url: string) {
     if (!url) {
-      throw new InvalidServerError(url);
+      throw new ClientError(`Please specify a valid tesseract-olap server URL.`);
     }
-
     this.baseUrl = url;
   }
 
   checkStatus(): Promise<ServerStatus> {
     return axios.get(this.baseUrl).then(
-      (response: AxiosResponse<JSONObject>) => {
-        this.serverVersion = response.data.tesseract_version;
+      (response: AxiosResponse<any>) => {
         this.serverOnline = response.data.status;
+        this.serverVersion = response.data.tesseract_version;
         return {
           status: this.serverOnline,
           url: this.baseUrl,
@@ -47,42 +45,47 @@ class Client {
   cube(cubeName: string): Promise<Cube> {
     const url = urljoin(this.baseUrl, "cubes", cubeName);
     const cubePromise =
-      this.cache[cubeName] ||
-      axios.get(url).then((response: AxiosResponse<JSONObject>) => {
-        const cube = Cube.fromJSON(response.data);
-        cube.server = this.baseUrl;
-        this.cache[cube.name] = Promise.resolve(cube);
-        return cube;
+      this.cacheCube[cubeName] ||
+      axios.get(url).then((response: AxiosResponse<any>) => {
+        const protoCube = response.data;
+        if (typeof protoCube.name === "string") {
+          const cube = Cube.fromJSON(protoCube);
+          cube.server = this.baseUrl;
+          this.cacheCube[cube.name] = Promise.resolve(cube);
+          return cube;
+        }
+
+        throw new ServerError(response);
       });
-    this.cache[cubeName] = cubePromise;
+    this.cacheCube[cubeName] = cubePromise;
     return cubePromise;
   }
 
   cubes(): Promise<Cube[]> {
     const url = urljoin(this.baseUrl, "cubes");
     const cubePromises =
-      this.cacheAll ||
-      axios.get(url).then((response: AxiosResponse<JSONObject>) => {
+      this.cacheCubes ||
+      axios.get(url).then((response: AxiosResponse<any>) => {
         const data = response.data;
         if (Array.isArray(data.cubes)) {
-          const cubePromises = data.cubes.map((protoCube: JSONObject) => {
-            if (protoCube.name in this.cache) {
-              return this.cache[protoCube.name];
+          const cubePromises = data.cubes.map((protoCube: any) => {
+            if (protoCube.name in this.cacheCube) {
+              return this.cacheCube[protoCube.name];
             }
             else {
               const cube = Cube.fromJSON(protoCube);
               cube.server = this.baseUrl;
               const cubePromise = Promise.resolve(cube);
-              this.cache[cube.name] = cubePromise;
+              this.cacheCube[cube.name] = cubePromise;
               return cubePromise;
             }
           });
           return Promise.all(cubePromises);
         }
 
-        throw new InvalidServerError(this.baseUrl);
+        throw new ServerError(response);
       });
-    this.cacheAll = cubePromises;
+    this.cacheCubes = cubePromises;
     return cubePromises;
   }
 
@@ -100,15 +103,14 @@ class Client {
     const headers: any = {Accept: FORMATS[format]};
     const request: any = {url, method, headers};
     if (method == "POST") {
-      const searchParams = url.split("?");
-      request.url = searchParams.shift();
+      headers["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8";
+      const splitter = url.indexOf("?");
+      request.data = url.substr(splitter + 1);
       request.method = "POST";
-      request.headers["Content-Type"] =
-        "application/x-www-form-urlencoded; charset=utf-8";
-      request.data = searchParams.join("?");
+      request.url = url.substr(0, splitter);
     }
 
-    return axios(request).then((response: AxiosResponse<JSONObject>) => {
+    return axios(request).then((response: AxiosResponse<any>) => {
       if (response.status > 199 && response.status < 300) {
         return {
           data: response.data.data,
@@ -116,24 +118,37 @@ class Client {
           options: query.getOptions()
         };
       }
-      throw new QueryServerError(response);
+      throw new ServerError(response);
     });
   }
 
-  members(level: Level, caption?: string): Promise<Member[]> {
+  member() {
+    throw new ClientError(`tesseract-olap server doesn't support fetching a member by key.`);
+  }
+
+  members(
+    level: Level,
+    getChildren: boolean = false,
+    caption?: string
+  ): Promise<Member[]> {
     const format: AllowedFormat = AllowedFormat.jsonrecords;
     const url = urljoin(level.cube.toString(), `members.${format}`);
-    const params: any = {level: level.fullName};
+    const params: any = {level: level.fullname};
+
+    if (getChildren) {
+      // TODO: check support
+      params["children"] = true;
+    }
 
     if (caption) {
       if (!level.hasProperty(caption)) {
-        throw new PropertyMissingError(level.fullName, "level", caption);
+        throw new ClientError(`Property ${caption} does not exist in level ${level.fullname}`);
       }
       params["caption"] = caption;
     }
 
-    return axios({url, params}).then((response: AxiosResponse<JSONObject>) =>
-      response.data["data"].map((protoMember: JSONObject) => {
+    return axios({url, params}).then((response: AxiosResponse<any>) =>
+      response.data["data"].map((protoMember: any) => {
         const member = Member.fromJSON(protoMember);
         member.level = level;
         return member;

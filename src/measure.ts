@@ -1,15 +1,17 @@
 import urljoin from "url-join";
-
 import {AggregatorType} from "./common";
 import Cube from "./cube";
-import {AnnotationMissingError} from "./errors";
-import {Annotated, Annotations, CubeChild, JSONObject, Named} from "./interfaces";
+import {ClientError} from "./errors";
+import {Annotated, Annotations, CubeChild, Named, Serializable} from "./interfaces";
 
-class Measure implements Annotated, CubeChild, Named {
+class Measure implements Annotated, CubeChild, Named, Serializable {
   public aggregatorType: AggregatorType;
   public annotations: Annotations;
+  public caption?: string;
   public cube: Cube;
   public name: string;
+
+  private readonly isMeasure: boolean = true;
 
   constructor(name: string, annotations: Annotations, aggregatorType: AggregatorType) {
     this.aggregatorType = aggregatorType;
@@ -17,15 +19,19 @@ class Measure implements Annotated, CubeChild, Named {
     this.name = name;
   }
 
-  static fromJSON(root: JSONObject) {
+  static fromJSON(json: any) {
     return new Measure(
-      root["name"],
-      root["annotations"],
-      root["aggregator"] || AggregatorType.UNKNOWN
+      json["name"],
+      json["annotations"],
+      json["aggregator"] || AggregatorType.UNKNOWN
     );
   }
 
-  get fullName(): string {
+  static isMeasure(obj: any): obj is Measure {
+    return Boolean(obj && obj.isMeasure);
+  }
+
+  get fullname(): string {
     return `Measures.${this.name}`;
   }
 
@@ -34,15 +40,16 @@ class Measure implements Annotated, CubeChild, Named {
       return this.annotations[key];
     }
     if (defaultValue === undefined) {
-      throw new AnnotationMissingError(this.name, "measure", key);
+      throw new ClientError(`Annotation ${key} does not exist in measure ${this.name}.`);
     }
     return defaultValue;
   }
 
-  toJSON(): JSONObject {
+  toJSON(): any {
     return {
       aggregator: this.aggregatorType,
       annotations: this.annotations,
+      fullname: this.fullname,
       name: this.name,
       uri: this.toString()
     };

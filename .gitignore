@@ -1,5 +1,8 @@
 # Application specific directories
+build/
 dist/
+lib/
+types/
 
 # Logs
 logs

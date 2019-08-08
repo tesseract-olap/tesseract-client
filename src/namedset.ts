@@ -1,29 +1,57 @@
-import {Annotations, JSONObject} from "./common";
+import urljoin from "url-join";
 import Cube from "./cube";
-import Dimension from "./dimension";
+import {ClientError} from "./errors";
+import {Annotated, Annotations, CubeChild, Named, Serializable} from "./interfaces";
 import Level from "./level";
 
-class NamedSet {
+class NamedSet implements Annotated, CubeChild, Named, Serializable {
   public annotations: Annotations;
-  public cube: Cube;
   public level: Level;
   public name: string;
 
-  constructor(name: string, level: Level, annotations: Annotations) {
+  private readonly isNamedset: boolean = true;
+
+  constructor(name: string, annotations: Annotations) {
     this.annotations = annotations;
-    this.level = level;
     this.name = name;
   }
 
-  static fromJSON(dimensions: Dimension[], root: JSONObject): NamedSet {
-    const dim = dimensions.find(d => d.name == root["dimension"]);
-    const hie = dim.findHierarchy(root["hierarchy"]);
-    const level = hie.findLevel(root["level"]);
-    return new NamedSet(root["name"], level, root["annotations"]);
+  static fromJSON(json: any): NamedSet {
+    return new NamedSet(json["name"], json["annotations"]);
   }
 
-  get fullName(): string {
+  static isNamedset(obj: any): obj is NamedSet {
+    return Boolean(obj && obj.isNamedset);
+  }
+
+  get cube(): Cube {
+    return this.level.cube;
+  }
+
+  get fullname(): string {
     return this.name;
+  }
+
+  getAnnotation(key: string, defaultValue?: string): string {
+    if (key in this.annotations) {
+      return this.annotations[key];
+    }
+    if (defaultValue === undefined) {
+      throw new ClientError(`Annotation ${key} does not exist in namedset ${this.fullname}.`);
+    }
+    return defaultValue;
+  }
+
+  toJSON(): any {
+    return {
+      annotations: this.annotations,
+      level: this.level.fullname,
+      name: this.name
+    };
+  }
+
+  toString(): string {
+    return urljoin(this.level.toString(), `#/namedsets/${encodeURIComponent(this.name)}`);
   }
 }
 

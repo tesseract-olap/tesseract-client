@@ -1,243 +1,179 @@
 import formurlencoded from "form-urlencoded";
 import urljoin from "url-join";
-
 import {
   AllowedComparison,
   AllowedFormat,
   AllowedOrder,
+  parseCut,
   pushUnique,
-  splitFullNameParts
+  splitFullname,
+  stringifyCut
 } from "./common";
 import Cube from "./cube";
-import {
-  InvalidDrillable,
-  InvalidDrillableIdentifier,
-  LevelMissingError,
-  MeasureMissingError,
-  NotImplementedError,
-  PropertyMissingError
-} from "./errors";
-import {Drillable, JSONObject, QueryOptions} from "./interfaces";
+import {ClientError} from "./errors";
+import {CubeChild, Drillable, QueryOptions, Serializable} from "./interfaces";
 import Level from "./level";
 import Measure from "./measure";
 import Member from "./member";
 
-class Query {
+class Query implements CubeChild, Serializable {
   public cube: Cube;
 
-  // private limit: number;
-  // private offset: number;
-  // private orderDescendent: boolean;
-  // private orderProperty: string;
   private calculatedGrowth: string;
-  private calculatedRca: string;
+  private calculatedRCA: string;
   private calculatedTop: string;
   private captions: string[] = [];
-  private cuts: string[] = [];
+  private cuts: {[drillable: string]: string[]} = {};
   private drilldowns: string[] = [];
-  // private filters: string[] = [];
+  private filters: string[] = [];
+  private limit: number;
   private measures: string[] = [];
-  private options: QueryOptions = {
+  private offset: number;
+  private orderDescendent: boolean;
+  private orderProperty: string;
+  private properties: string[] = [];
+
+  public options: QueryOptions = {
     // nonempty: true,
     // distinct: false,
     parents: false,
     // debug: false,
     sparse: true
   };
-  private properties: string[] = [];
 
   constructor(cube: Cube) {
     this.cube = cube;
   }
 
-  get aggregateObject(): JSONObject {
+  get aggregateObject(): any {
+    const cuts = Object.keys(this.cuts)
+      .map(drillable => stringifyCut(drillable, this.cuts[drillable]))
+      .filter(Boolean);
     return {
       ...this.options,
       captions: this.captions.length ? this.captions : undefined,
-      cuts: this.cuts.length ? this.cuts : undefined,
+      cuts: cuts.length ? cuts : undefined,
       drilldowns: this.drilldowns.length ? this.drilldowns : undefined,
-      // filter: this.filters.length ? this.filters : undefined,
+      filter: this.filters.length ? this.filters : undefined,
       growth: this.calculatedGrowth,
+      limit: this.limit,
       measures: this.measures.length ? this.measures : undefined,
-      // limit: this.limit,
-      // offset: this.offset,
-      // order_desc: this.orderDescendent,
-      // order: this.orderProperty,
+      offset: this.offset,
+      order_desc: this.orderDescendent,
+      order: this.orderProperty,
       properties: this.properties.length ? this.properties : undefined,
-      rca: this.calculatedRca,
+      rca: this.calculatedRCA,
       top: this.calculatedTop
     };
   }
 
-  get logicLayerObject(): JSONObject {
+  get logicLayerObject(): any {
     const cube = this.cube;
     // TODO: implement uniqueName when available
+    const escapeCommas = (dd: string) => (dd.includes(",") ? `[${dd}]` : dd);
     const onlyLevelName = (dd: string) => dd.split(".").pop();
-    const output: JSONObject = {
+    const output: any = {
       ...this.options,
       cube: cube.name,
       drilldowns: this.drilldowns.map(onlyLevelName).join(",") || undefined,
-      measures: this.measures.join(",") || undefined,
-      growth: this.calculatedGrowth,
-      rca: this.calculatedRca,
-      top: this.calculatedTop
+      measures: this.measures.join(",") || undefined
     };
 
-    this.cuts.forEach(cut => {
-      const levelParts = splitFullNameParts(cut);
-      const members = levelParts.pop();
-      const level = cube.queryFullName(levelParts);
-      // levels need a hidden uniqueName, soon to be implemented
-      output[level.name] = members;
+    Object.keys(this.cuts).forEach(drillableFullname => {
+      const members = this.cuts[drillableFullname];
+      if (members.length > 0) {
+        const level = cube.getLevel(drillableFullname);
+        // TODO: use level.uniqueName when implemented
+        output[level.name] = members;
+      }
     });
+
+    if (this.calculatedGrowth) {
+      const growth = this.calculatedGrowth.split(",");
+      growth[0] = onlyLevelName(growth[0]);
+      output.growth = growth.join(",");
+    }
+
+    if (this.calculatedRCA) {
+      const rca = this.calculatedRCA.split(",");
+      rca[0] = onlyLevelName(rca[0]);
+      rca[1] = onlyLevelName(rca[1]);
+      output.rca = rca.join(",");
+    }
+
+    if (this.calculatedTop) {
+      const top = this.calculatedTop.split(",");
+      top[1] = onlyLevelName(top[1]);
+      output.top = top.join(",");
+    }
 
     return output;
   }
 
-  addCut(cut: string | Level, memberList: string[] | Member[] = []): Query {
-    let drillable: Drillable, members: string;
-    const memberToString = (member: string | Member): string =>
-      typeof member === "object" ? member.key : member;
-
-    if (!Array.isArray(memberList)) {
-      throw new TypeError(`Invalid parameter while trying to add a cut: memberList parameter must be an array.`);
-    }
-
-    if (typeof cut === "string") {
-      const drillableParts = splitFullNameParts(cut);
-      const possibleMembers = drillableParts.pop();
-      const possibleDrillableId = drillableParts.join(".");
-
-      if (memberList.length === 0) {
-        drillable = this.getDrillableOrFail(possibleDrillableId);
-        members = possibleMembers;
-      }
-      else {
-        drillable = this.getDrillableOrFail(cut);
-        members = Array.from(memberList, memberToString).join(",");
-      }
-    }
-    else {
-      drillable = cut;
-      if (memberList.length === 0) {
-        throw new Error(`The cut for the ${drillable} object has no members.`);
-      }
-      members = Array.from(memberList, memberToString).join(",");
-    }
-
-    cut = `${drillable.fullName}.${members}`;
-    pushUnique(this.cuts, cut);
+  addCaption(level: string | Level, property: string): Query {
+    const propertyFullname = this.getProperty(level, property);
+    this.captions.push(propertyFullname);
     return this;
   }
 
-  addDrilldown(identifier: string | Level): Query {
-    const cube = this.cube;
+  addCut(cut: string | Level, memberList: string[] | Member[] = []): Query {
+    let drillable: Drillable, members: string[];
+    const memberToString = (member: string | Member): string =>
+      Member.isMember(member) ? member.key : member;
 
-    const drillable =
-      typeof identifier === "string" ? this.getDrillableOrFail(identifier) : identifier;
-
-    if (drillable.cube !== cube) {
-      throw new LevelMissingError(cube.name, drillable.fullName);
+    if (Level.isLevel(cut) || memberList.length > 0) {
+      drillable = this.cube.getLevel(cut);
+    }
+    else {
+      const [parsedDrillable, parsedMembers] = parseCut(cut);
+      drillable = this.cube.getLevel(parsedDrillable);
+      const normalizedMembers = Array.from(memberList, memberToString);
+      parsedMembers.forEach(member => pushUnique(normalizedMembers, member));
+      memberList = normalizedMembers;
     }
 
-    pushUnique(this.drilldowns, drillable.fullName);
+    members = this.cuts[drillable.fullname] || [];
+    memberList.forEach((member: string | Member) =>
+      pushUnique(members, memberToString(member))
+    );
+    this.cuts[drillable.fullname] = members;
+
+    return this;
+  }
+
+  addDrilldown(lvlIdentifier: string | Level): Query {
+    const level = this.cube.getLevel(lvlIdentifier);
+    pushUnique(this.drilldowns, level.fullname);
     return this;
   }
 
   addFilter(
-    measure: string | Measure,
+    msrIdentifier: string | Measure,
     comparison: AllowedComparison,
     value: number
   ): Query {
-    // if (typeof measure === "string") {
-    //   measure = this.cube.getMeasure(measure);
-    // }
-
-    // if (measure.cube !== this.cube) {
-    //   throw new MeasureMissingError(this.cube.name, measure.name);
-    // }
-
-    // this.filters.push(`${measure.name} ${comparison} ${value}`);
-    // return this;
-    throw new NotImplementedError();
+    const measure = this.cube.getMeasure(msrIdentifier);
+    const filter = `${measure.name} ${comparison} ${value}`;
+    pushUnique(this.filters, filter);
+    return this;
   }
 
-  addMeasure(measureIdentifier: string | Measure): Query {
-    const cube = this.cube;
-
-    const measure =
-      typeof measureIdentifier === "string"
-        ? cube.getMeasure(measureIdentifier)
-        : measureIdentifier;
-
-    if (measure.cube !== cube) {
-      throw new MeasureMissingError(cube.name, measure.name);
-    }
-
+  addMeasure(msrIdentifier: string | Measure): Query {
+    const measure = this.cube.getMeasure(msrIdentifier);
     pushUnique(this.measures, measure.name);
     return this;
   }
 
-  addProperty(property: string): Query {
-    throw new NotImplementedError();
-  }
-
-  assignQuery(query: {[key: string]: any}) {
-    let i, list, count;
-
-    // Measures
-    list = query.measures || [];
-    count = list.length;
-    for (i = 0; i < count; i++) {
-      this.addMeasure(list[i]);
+  addProperty(lvlIdentifier: string | Level, propertyName: string): Query {
+    const property = this.getProperty(lvlIdentifier, propertyName);
+    if (property) {
+      pushUnique(this.properties, property);
     }
-
-    // Drilldowns
-    list = query.drilldowns || [];
-    count = list.length;
-    for (i = 0; i < count; i++) {
-      this.addDrilldown(list[i]);
-    }
-
-    // Cuts
-    list = query.cuts || [];
-    count = list.length;
-    for (i = 0; i < count; i++) {
-      this.addCut(list[i]);
-    }
-
-    // Filters
-    // list = query.filters || [];
-    // count = list.length;
-    // for (i = 0; i < count; i++) {
-    //   const [measure, comparison, value] = list[i];
-    //   this.addFilter(measure, comparison, value);
-    // }
-
-    // if (query.limit !== undefined) {
-    //   query.setPagination(query.limit, query.offset);
-    // }
-
-    // if (query.order !== undefined) {
-    //   query.setSorting(query.order, query.orderDesc);
-    // }
-
-    list = Object.keys(query.options || {});
-    count = list.length;
-    for (i = 0; i < count; i++) {
-      const key = list[i] as keyof QueryOptions;
-      this.setOption(key, query.options[key]);
-    }
-
     return this;
   }
 
   getOptions(): QueryOptions {
     return {...this.options};
-  }
-
-  getPath(format?: AllowedFormat): string {
-    return this.getAggregateUrl(format);
   }
 
   getAggregateUrl(format?: AllowedFormat): string {
@@ -260,142 +196,99 @@ class Query {
     return urljoin(this.cube.server, `data${dotFormat}?${parameters}`);
   }
 
-  private getProperty(...parts: string[]): string {
-    if (parts.length < 3) {
-      throw new Error(
-        "Property specification must be Dimension[.Hierarchy].Level.Property"
-      );
+  private getProperty(lvlIdentifier: string | Level, propertyName?: string): string {
+    let level: Level;
+
+    if (typeof lvlIdentifier === "string") {
+      const nameParts = splitFullname(lvlIdentifier);
+      if (!propertyName) {
+        propertyName = nameParts.pop();
+      }
+      level = this.cube.getLevel(nameParts);
+    }
+    else {
+      level = this.cube.getLevel(lvlIdentifier);
     }
 
-    const pname = parts[parts.length - 1];
-    const level = this.cube.queryFullName(parts) as Level;
-
-    if (level.hasProperty(pname)) {
-      return `${level.fullName}.${pname}`;
+    if (!level.hasProperty(propertyName)) {
+      throw new ClientError(`Property ${propertyName} does not exist in level ${level.fullname}`);
     }
 
-    throw new PropertyMissingError(level.fullName, "level", pname);
+    return `${level.fullname}.${propertyName}`;
   }
 
-  private getDrillableOrFail(fullName: string): Drillable {
-    const drillable = this.cube.queryFullName(fullName) as Drillable;
-
-    if (!drillable) {
-      throw new InvalidDrillableIdentifier(fullName);
-    }
-    if (!drillable.isDrillable) {
-      throw new InvalidDrillable(drillable);
-    }
-
-    return drillable;
-  }
-
-  setGrowth(lvlRef: string | Level, msrRef: string | Measure): Query {
-    const cube = this.cube;
-
-    const level = typeof lvlRef === "string" ? cube.queryFullName(lvlRef) : lvlRef;
-    if (!level || level.cube !== cube) {
-      throw new LevelMissingError(cube.name, level.name);
-    }
-
-    const measure = typeof msrRef === "string" ? cube.getMeasure(msrRef) : msrRef;
-    if (measure.cube !== cube) {
-      throw new MeasureMissingError(cube.name, measure.name);
-    }
-
-    this.calculatedGrowth = `${level.fullName},${measure.name}`;
+  setGrowth(lvlIdentifier: string | Level, msrIdentifier: string | Measure): Query {
+    const level = this.cube.getLevel(lvlIdentifier);
+    const measure = this.cube.getMeasure(msrIdentifier);
+    this.calculatedGrowth = `${level.fullname},${measure.name}`;
     return this;
   }
 
-  setOption(key: keyof QueryOptions, value: boolean): Query {
-    if (key in this.options) {
-      this.options[key] = value;
+  setOption(option: keyof QueryOptions, value: boolean): Query {
+    if (!this.options.hasOwnProperty(option)) {
+      throw new ClientError(`Option ${option} is not a valid option.`);
     }
+    this.options[option] = value;
     return this;
   }
 
-  setPagination(limit: number, offset: number = 0): Query {
-    // if (limit > 0) {
-    //   this.limit = limit;
-    //   this.offset = offset;
-    // }
-    // else {
-    //   this.limit = undefined;
-    //   this.offset = undefined;
-    // }
-    // return this;
-    throw new NotImplementedError();
+  setPagination(limit: number, offset: number): Query {
+    if (limit > 0) {
+      this.limit = limit;
+      this.offset = offset || 0;
+    }
+    else {
+      this.limit = undefined;
+      this.offset = undefined;
+    }
+    return this;
   }
 
   setRCA(
-    lvlRef1: string | Level,
-    lvlRef2: string | Level,
-    msrRef: string | Measure
+    lvlIdentifier1: string | Level,
+    lvlIdentifier2: string | Level,
+    msrIdentifier: string | Measure
   ): Query {
     const cube = this.cube;
-
-    const level1 =
-      typeof lvlRef1 === "string" ? this.getDrillableOrFail(lvlRef1) : lvlRef1;
-    if (level1.cube !== cube) {
-      throw new LevelMissingError(cube.name, level1.name);
-    }
-
-    const level2 =
-      typeof lvlRef2 === "string" ? this.getDrillableOrFail(lvlRef2) : lvlRef2;
-    if (level2.cube !== cube) {
-      throw new LevelMissingError(cube.name, level2.name);
-    }
-
-    const measure = typeof msrRef === "string" ? cube.getMeasure(msrRef) : msrRef;
-    if (measure.cube !== cube) {
-      throw new MeasureMissingError(cube.name, measure.name);
-    }
-
-    this.calculatedRca = `${level1.fullName},${level2.fullName},${measure.name}`;
+    const level1 = cube.getLevel(lvlIdentifier1);
+    const level2 = cube.getLevel(lvlIdentifier2);
+    const measure = cube.getMeasure(msrIdentifier);
+    this.calculatedRCA = `${level1.fullname},${level2.fullname},${measure.name}`;
     return this;
   }
 
-  setSorting(props: string | string[], descendent?: boolean): Query {
-    // if (typeof props === "string") {
-    //   const measure: Measure = this.cube.getMeasure(props);
-    //   this.orderProperty = measure.fullName;
-    // }
-    // else {
-    //   const property: string = this.getProperty(...props);
-    //   this.orderProperty = property;
-    // }
-    // this.orderDescendent = descendent;
-    // return this;
-    throw new NotImplementedError();
+  setSorting(msrIdentifier: string | Measure, direction: boolean) {
+    if (Measure.isMeasure(msrIdentifier)) {
+      this.orderProperty = msrIdentifier.name;
+      this.orderDescendent = direction;
+    }
+    else {
+      const measure = this.cube.measuresByName[msrIdentifier];
+      this.orderProperty = measure ? measure.name : this.getProperty(msrIdentifier);
+      this.orderDescendent = direction;
+    }
+    return this;
   }
 
   setTop(
     amount: number,
-    lvlRef: string | Level,
-    msrRef: string | Measure,
+    lvlIdentifier: string | Level,
+    msrIdentifier: string | Measure,
     order: AllowedOrder = AllowedOrder.desc
   ): Query {
     const cube = this.cube;
 
     if (!isFinite(amount) || isNaN(amount)) {
-      throw new TypeError(`Argument "amount" is not a number, value "${amount}"`);
+      throw new TypeError(`Invalid number in argument "amount": ${amount}`);
     }
+    const level = cube.getLevel(lvlIdentifier);
+    const measure = cube.getMeasure(msrIdentifier);
 
-    const level = typeof lvlRef === "string" ? cube.queryFullName(lvlRef) : lvlRef;
-    if (!level || level.cube !== cube) {
-      throw new LevelMissingError(cube.name, level.name);
-    }
-
-    const measure = typeof msrRef === "string" ? cube.getMeasure(msrRef) : msrRef;
-    if (measure.cube !== cube) {
-      throw new MeasureMissingError(cube.name, measure.name);
-    }
-
-    this.calculatedTop = `${amount},${level.fullName},${measure.name},${order}`;
+    this.calculatedTop = `${amount},${level.fullname},${measure.name},${order}`;
     return this;
   }
 
-  toJSON(): JSONObject {
+  toJSON(): any {
     const serverUrl = this.cube.server;
     return {
       serverUrl,
