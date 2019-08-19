@@ -12,6 +12,7 @@ class Client {
   public annotations: Annotations = {};
   public baseUrl: string = "";
   public serverOnline: string = "";
+  public serverSoftware: string = "tesseract";
   public serverVersion: string = "";
 
   private cacheCube: {[key: string]: Promise<Cube>} = {};
@@ -30,6 +31,7 @@ class Client {
         this.serverOnline = response.data.status;
         this.serverVersion = response.data.tesseract_version;
         return {
+          software: this.serverSoftware,
           status: this.serverOnline,
           url: this.baseUrl,
           version: this.serverVersion
