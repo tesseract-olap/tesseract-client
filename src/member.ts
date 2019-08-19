@@ -28,9 +28,11 @@ class Member implements Named, Serializable {
   }
 
   get fullname(): string {
-    const nameParts = splitFullname(this.level.fullname);
-    nameParts.push(this.key);
-    return joinFullname(nameParts);
+    return joinFullname(this.fullnameParts);
+  }
+
+  get fullnameParts(): string[] {
+    return this.level.fullnameParts.concat(this.key);
   }
 
   toJSON(): any {

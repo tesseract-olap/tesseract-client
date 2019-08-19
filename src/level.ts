@@ -56,12 +56,16 @@ class Level implements Annotated, Drillable, Serializable {
   }
 
   get fullname(): string {
+    return joinFullname(this.fullnameParts);
+  }
+
+  get fullnameParts(): string[] {
     const nameParts = [this.dimension.name];
     if (this.dimension.name !== this.hierarchy.name) {
       nameParts.push(this.hierarchy.name);
     }
     nameParts.push(this.name);
-    return joinFullname(nameParts);
+    return nameParts;
   }
 
   getAnnotation(key: string, defaultValue?: string): string {

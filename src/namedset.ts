@@ -29,7 +29,11 @@ class NamedSet implements Annotated, CubeChild, Named, Serializable {
   }
 
   get fullname(): string {
-    return this.name;
+    return joinFullname(this.fullnameParts);
+  }
+
+  get fullnameParts(): string[] {
+    return this.level.fullnameParts.concat(this.name);
   }
 
   getAnnotation(key: string, defaultValue?: string): string {
