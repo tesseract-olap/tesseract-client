@@ -1,10 +1,11 @@
 import urljoin from "url-join";
+import {joinFullname} from "./common";
 import Cube from "./cube";
-import {ClientError} from "./errors";
-import {Annotated, Annotations, CubeChild, Named, Serializable} from "./interfaces";
+import {Annotations, CubeChild, Named, Serializable} from "./interfaces";
 import Level from "./level";
+import {Annotated, applyMixins} from "./mixins";
 
-class NamedSet implements Annotated, CubeChild, Named, Serializable {
+class NamedSet implements CubeChild, Named, Serializable {
   readonly annotations: Annotations;
   readonly isNamedset: boolean = true;
   level: Level;
@@ -35,16 +36,6 @@ class NamedSet implements Annotated, CubeChild, Named, Serializable {
     return this.level.fullnameParts.concat(this.name);
   }
 
-  getAnnotation(key: string, defaultValue?: string): string {
-    if (key in this.annotations) {
-      return this.annotations[key];
-    }
-    if (defaultValue === undefined) {
-      throw new ClientError(`Annotation ${key} does not exist in namedset ${this.fullname}.`);
-    }
-    return defaultValue;
-  }
-
   toJSON(): any {
     return {
       annotations: this.annotations,
@@ -57,5 +48,9 @@ class NamedSet implements Annotated, CubeChild, Named, Serializable {
     return urljoin(this.level.toString(), `#/namedsets/${encodeURIComponent(this.name)}`);
   }
 }
+
+interface NamedSet extends Annotated {}
+
+applyMixins(NamedSet, [Annotated]);
 
 export default NamedSet;

@@ -75,4 +75,6 @@ class MultiClient {
   }
 }
 
+interface MultiClient {}
+
 export default MultiClient;

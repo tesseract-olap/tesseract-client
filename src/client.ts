@@ -164,4 +164,6 @@ class Client {
   }
 }
 
+interface Client {}
+
 export default Client;
