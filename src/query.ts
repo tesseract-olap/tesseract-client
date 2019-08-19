@@ -17,23 +17,22 @@ import Measure from "./measure";
 import Member from "./member";
 
 class Query implements CubeChild, Serializable {
-  public cube: Cube;
+  readonly cube: Cube;
+  calculatedGrowth: string;
+  calculatedRCA: string;
+  calculatedTop: string;
+  readonly captions: string[] = [];
+  readonly cuts: {[drillable: string]: string[]} = {};
+  readonly drilldowns: string[] = [];
+  readonly filters: string[] = [];
+  limit: number;
+  readonly measures: string[] = [];
+  offset: number;
+  orderDescendent: boolean;
+  orderProperty: string;
+  readonly properties: string[] = [];
 
-  private calculatedGrowth: string;
-  private calculatedRCA: string;
-  private calculatedTop: string;
-  private captions: string[] = [];
-  private cuts: {[drillable: string]: string[]} = {};
-  private drilldowns: string[] = [];
-  private filters: string[] = [];
-  private limit: number;
-  private measures: string[] = [];
-  private offset: number;
-  private orderDescendent: boolean;
-  private orderProperty: string;
-  private properties: string[] = [];
-
-  public options: QueryOptions = {
+  private options: QueryOptions = {
     // nonempty: true,
     // distinct: false,
     parents: false,

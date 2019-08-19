@@ -5,11 +5,10 @@ import {Annotated, Annotations, CubeChild, Named, Serializable} from "./interfac
 import Level from "./level";
 
 class NamedSet implements Annotated, CubeChild, Named, Serializable {
-  public annotations: Annotations;
-  public level: Level;
-  public name: string;
-
-  private readonly isNamedset: boolean = true;
+  readonly annotations: Annotations;
+  readonly isNamedset: boolean = true;
+  level: Level;
+  readonly name: string;
 
   constructor(name: string, annotations: Annotations) {
     this.annotations = annotations;

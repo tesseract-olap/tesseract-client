@@ -6,12 +6,11 @@ import {Annotated, Annotations, CubeChild, Named, Serializable} from "./interfac
 import Level from "./level";
 
 class Hierarchy implements Annotated, CubeChild, Named, Serializable {
-  public annotations: Annotations;
-  public dimension: Dimension;
-  public levels: Level[];
-  public name: string;
-
-  private readonly isHierarchy: boolean = true;
+  readonly annotations: Annotations;
+  dimension: Dimension;
+  readonly isHierarchy: boolean = true;
+  readonly levels: Level[];
+  readonly name: string;
 
   constructor(name: string, annotations: Annotations, levels: Level[]) {
     this.annotations = annotations;
