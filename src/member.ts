@@ -1,14 +1,13 @@
 import urljoin from "url-join";
-import {joinFullname, splitFullname} from "./common";
+import {joinFullname} from "./common";
 import {Named, Serializable} from "./interfaces";
 import Level from "./level";
 
 class Member implements Named, Serializable {
-  public key: string;
-  public level: Level;
-  public name: string;
-
-  private readonly isMember: boolean = true;
+  readonly isMember: boolean = true;
+  readonly key: string;
+  level: Level;
+  readonly name: string;
 
   constructor(key: string, name: string) {
     this.key = key;
