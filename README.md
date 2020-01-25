@@ -1,10 +1,13 @@
-# tesseract-client [![Build Status][travis-img]][travis]
+# tesseract-client ![Status DEPRECATED](https://img.shields.io/badge/status-DEPRECATED-red)
 
-[travis-img]: https://travis-ci.org/Datawheel/tesseract-client.svg
-[travis]: https://travis-ci.org/Datawheel/tesseract-client
-
-A javascript client to fetch and work with entities from a [tesseract-olap](https://www.tesseract-olap.io/) server.
+A javascript client to fetch and work with entities from a [tesseract-olap](https://www.tesseract-olap.io/) server.  
 Heavily inspired by the [`mondrian-rest-client`](https://github.com/Datawheel/mondrian-rest-client) project, but with some added functionality.
+
+> This project has been deprecated in favor of the [`@datawheel/olap-client`](https://github.com/Datawheel/olap-client) package.  
+> There are some similarities in the API methods, but please check the whole documentation before migrating.
+
+<details>
+<summary>See the documentation for this package anyway</summary>
 
 ## Installation
 
@@ -47,3 +50,5 @@ async function getAllCubeNames(client) {
 
 We have a [migration guide](./Migration.md) for users of `mondrian-rest-client`.
 The package also exports TypeScript definitions for most of the classes used.
+
+</details>
